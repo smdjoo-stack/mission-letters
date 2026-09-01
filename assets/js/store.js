@@ -7,9 +7,9 @@ const READER_PW = id => `missionletter.readerpw.${id}`;
 const READER_PW_SHARED = 'missionletter.readerpw.__shared';
 
 const DEFAULTS = {
-  missionaryName: '',
-  repoOwner: '',
-  repoName: '',
+  missionaryName: '김태주 선교사',
+  repoOwner: 'smdjoo-stack',
+  repoName: 'mission-letters',
   repoBranch: 'main',
   githubToken: '',
   defaultPassword: ''
