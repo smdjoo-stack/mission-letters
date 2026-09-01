@@ -4,6 +4,7 @@ import { getSettings, rememberReaderPassword, recallReaderPassword, forgetReader
 import { loadLetterFile } from '../letters.js';
 import { decryptBody } from '../crypto.js';
 import { letterHTML, loadLetterImages, printLetter } from '../render.js';
+import { findNeighbors } from './archive.js';
 
 export async function renderLetter(root, id) {
   document.body.classList.add('mode-reader');
@@ -68,6 +69,7 @@ function showLock(root, meta, id) {
           <input type="checkbox" id="remember" checked> 이 기기에서 기억하기
         </label>
         <p class="lock__error" id="lock-error" role="alert"></p>
+        <a class="lock__archive" href="#/archive">지난 편지 모두 보기</a>
       </div>
     </div>`;
 
@@ -118,10 +120,12 @@ function showLetter(root, meta, body, id) {
         <button class="btn btn--ghost" id="print-btn">PDF로 저장 / 인쇄</button>
         <span class="reader-actions__status" id="print-status"></span>
       </div>
+      <nav class="letter-nav no-print" id="letter-nav" hidden></nav>
     </div>`;
 
   const article = $('.letter', root);
   loadLetterImages(article);
+  paintNeighbors(root, id);
 
   $('#print-btn', root).onclick = async e => {
     const button = e.currentTarget;
@@ -132,6 +136,29 @@ function showLetter(root, meta, body, id) {
       button.disabled = false;
     }
   };
+}
+
+/** 지난 편지 / 다음 편지 이동 — 후원자가 예전 소식도 이어서 읽을 수 있도록 */
+async function paintNeighbors(root, id) {
+  const { older, newer, total } = await findNeighbors(id);
+  const nav = $('#letter-nav', root);
+  if (!nav || total <= 1) return;
+
+  nav.innerHTML = `
+    <div class="letter-nav__side">
+      ${older ? `<a class="letter-nav__link" href="#/letter/${esc(older.id)}">
+        <span class="letter-nav__dir">← 지난 편지</span>
+        <span class="letter-nav__period">${esc(periodLabel(older.id))}</span>
+      </a>` : ''}
+    </div>
+    <a class="letter-nav__all" href="#/archive">편지 ${total}통 모두 보기</a>
+    <div class="letter-nav__side letter-nav__side--end">
+      ${newer ? `<a class="letter-nav__link" href="#/letter/${esc(newer.id)}">
+        <span class="letter-nav__dir">다음 편지 →</span>
+        <span class="letter-nav__period">${esc(periodLabel(newer.id))}</span>
+      </a>` : ''}
+    </div>`;
+  nav.hidden = false;
 }
 
 // ── 상태 3: 오류 ────────────────────────────────────────────────────

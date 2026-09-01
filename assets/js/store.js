@@ -4,6 +4,7 @@
 const KEY = 'missionletter.settings.v1';
 const DRAFT = id => `missionletter.draft.${id || 'new'}`;
 const READER_PW = id => `missionletter.readerpw.${id}`;
+const READER_PW_SHARED = 'missionletter.readerpw.__shared';
 
 const DEFAULTS = {
   missionaryName: '',
@@ -63,12 +64,21 @@ export function clearDraft(id) {
 // ── 열람자 비밀번호 기억 (P1-15) ────────────────────────────────────
 
 export function rememberReaderPassword(id, password) {
-  try { sessionStorage.setItem(READER_PW(id), password); } catch { /* noop */ }
-  try { localStorage.setItem(READER_PW(id), password); } catch { /* noop */ }
+  for (const store of [sessionStorage, localStorage]) {
+    try {
+      store.setItem(READER_PW(id), password);
+      store.setItem(READER_PW_SHARED, password);   // 지난 편지도 같은 비밀번호면 바로 열린다
+    } catch { /* noop */ }
+  }
 }
 
+/** 이 편지 전용 비밀번호 → 없으면 마지막으로 통한 비밀번호 */
 export function recallReaderPassword(id) {
-  return sessionStorage.getItem(READER_PW(id)) || localStorage.getItem(READER_PW(id)) || '';
+  return sessionStorage.getItem(READER_PW(id))
+      || localStorage.getItem(READER_PW(id))
+      || sessionStorage.getItem(READER_PW_SHARED)
+      || localStorage.getItem(READER_PW_SHARED)
+      || '';
 }
 
 export function forgetReaderPassword(id) {

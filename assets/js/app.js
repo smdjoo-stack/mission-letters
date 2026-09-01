@@ -6,6 +6,7 @@ import { renderSettings } from './views/settings.js';
 import { renderList } from './views/list.js';
 import { renderWrite } from './views/write.js';
 import { renderLetter } from './views/letter.js';
+import { renderArchive, latestLetterId } from './views/archive.js';
 
 const root = $('#app');
 
@@ -36,8 +37,20 @@ function paintNav() {
     </div>`;
 }
 
-route('/', () => {
-  if (isConfigured()) navigate('/list', { replace: true });
+route('/', async () => {
+  if (isConfigured()) { navigate('/list', { replace: true }); return; }
+
+  // 후원자가 주소만 알고 들어온 경우 — 최신 편지를 바로 연다.
+  document.body.classList.remove('mode-author');
+  $('#nav').hidden = true;
+  root.innerHTML = `<div class="page page--reader"><div class="skeleton">
+      <div class="skeleton__line skeleton__line--sm"></div>
+      <div class="skeleton__line skeleton__line--lg"></div>
+      <div class="skeleton__line"></div>
+    </div></div>`;
+
+  const latest = await latestLetterId();
+  if (latest) navigate(`/letter/${latest}`, { replace: true });
   else { enterAuthorMode(); renderLanding(); }
 });
 
@@ -51,6 +64,13 @@ route('/letter/:id', ({ id }) => {
   document.body.classList.remove('mode-author');
   $('#nav').hidden = true;
   renderLetter(root, id);
+});
+
+// 지난 편지 보관함 — 후원자가 예전 소식도 찾아볼 수 있는 곳
+route('/archive', () => {
+  document.body.classList.remove('mode-author');
+  $('#nav').hidden = true;
+  renderArchive(root);
 });
 
 setNotFound(() => {
@@ -72,7 +92,7 @@ function renderLanding() {
         <div class="empty__mark" aria-hidden="true">✉︎</div>
         <h1 class="empty__title">선교편지</h1>
         <p class="empty__desc">
-          후원자님이시라면 받으신 <strong>편지 링크</strong>로 접속해 주세요.<br>
+          아직 발행된 편지가 없습니다.<br>
           선교사님은 설정을 마치면 편지를 쓸 수 있습니다.
         </p>
         <button class="btn btn--primary btn--lg" id="go-settings">선교사 설정</button>

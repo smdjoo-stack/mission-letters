@@ -454,3 +454,76 @@ body.is-locked {
   width: 100%;
   overflow: hidden;
 }
+
+/* ── 지난 편지 보관함 (후원자용) ──────────────────────────────── */
+.archive__head { text-align: center; margin-bottom: 26px; }
+.archive__title { font-family: var(--serif); font-size: 25px; margin: 0 0 6px; }
+.archive__lead { font-size: 14px; color: var(--ink-faint); margin: 0; }
+
+.archive { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.archive__link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "period date" "name name";
+  gap: 4px 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color .15s, transform .1s;
+}
+.archive__link:hover { border-color: var(--accent); }
+.archive__link:active { transform: scale(.995); }
+.archive__item.is-latest .archive__link { border-color: var(--accent); }
+
+.archive__period { grid-area: period; font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .02em; }
+.archive__badge {
+  display: inline-block; margin-left: 8px; padding: 1px 8px;
+  background: var(--accent); color: var(--accent-ink);
+  border-radius: 999px; font-size: 11px; font-style: normal; font-weight: 700;
+  vertical-align: 1px;
+}
+.archive__date { grid-area: date; font-size: 12.5px; color: var(--ink-faint); }
+.archive__name {
+  grid-area: name;
+  font-size: 14px;
+  color: var(--ink-faint);
+  line-height: 1.5;
+}
+.archive__name.is-open { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--ink); }
+
+.lock__archive { display: inline-block; margin-top: 18px; font-size: 13.5px; color: var(--ink-faint); }
+
+/* ── 편지 사이 이동 ───────────────────────────────────────────── */
+.letter-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  max-width: 680px;
+  margin: 28px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.letter-nav__side { min-width: 0; }
+.letter-nav__side--end { text-align: right; }
+.letter-nav__link { display: inline-block; text-decoration: none; color: inherit; padding: 6px 0; }
+.letter-nav__dir { display: block; font-size: 12.5px; color: var(--accent); font-weight: 600; }
+.letter-nav__period { display: block; font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+.letter-nav__link:hover .letter-nav__period { color: var(--accent); }
+.letter-nav__all { font-size: 13px; color: var(--ink-faint); text-decoration: none; white-space: nowrap; }
+.letter-nav__all:hover { color: var(--accent); }
+
+@media (max-width: 560px) {
+  .letter-nav { grid-template-columns: 1fr 1fr; grid-template-areas: "prev next" "all all"; gap: 10px; }
+  .letter-nav__side:first-of-type { grid-area: prev; }
+  .letter-nav__side--end { grid-area: next; }
+  .letter-nav__all { grid-area: all; text-align: center; padding-top: 6px; }
+  .archive__link { padding: 14px 16px; }
+}
