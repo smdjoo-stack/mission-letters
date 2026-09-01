@@ -1,2 +1,5 @@
 .DS_Store
 .claude/
+
+# 로컬 바로가기 (개인용)
+*.webloc
