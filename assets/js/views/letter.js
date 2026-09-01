@@ -70,6 +70,7 @@ function showLock(root, meta, id) {
         </label>
         <p class="lock__error" id="lock-error" role="alert"></p>
         <a class="lock__archive" href="#/archive">지난 편지 모두 보기</a>
+        <p class="reader-foot"><a href="#/settings">선교사님이신가요? 편지 쓰러 가기</a></p>
       </div>
     </div>`;
 

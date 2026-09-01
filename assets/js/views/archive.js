@@ -37,6 +37,7 @@ export async function renderArchive(root) {
       <div class="empty">
         <h2 class="empty__title">아직 편지가 없습니다</h2>
         <p class="empty__desc">첫 편지가 발행되면 이곳에 쌓입니다.</p>
+        <a class="btn btn--primary btn--lg" href="#/settings">편지 쓰러 가기</a>
       </div>`;
     return;
   }
@@ -62,6 +63,9 @@ export async function renderArchive(root) {
   $$('.archive__item', root).forEach(row => {
     row.querySelector('.archive__link').onclick = () => navigate(`/letter/${row.dataset.id}`);
   });
+
+  $('#archive-body', root).insertAdjacentHTML('beforeend',
+    '<p class="reader-foot"><a href="#/settings">선교사님이신가요? 편지 쓰러 가기</a></p>');
 
   revealTitles(root, sorted);
 }
