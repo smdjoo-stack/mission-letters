@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>선교편지가 가는 길</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="서버 없이 편지가 만들어지고 후원자에게 닿기까지 — 처음 만드는 선교사님을 위한 개념 설명">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>✉️</text></svg>">
+<style>
+  :root {
+    --ground:   #F2F5F9;
+    --surface:  #FFFFFF;
+    --raised:   #FAFBFD;
+    --ink:      #16202F;
+    --muted:    #5D6B80;
+    --faint:    #8593A6;
+    --line:     #DCE3EC;
+    --navy:     #1B3A6B;
+    --red:      #B4232F;
+    --seal:     #7A1F27;
+    --shadow:   0 1px 2px rgba(22,32,47,.04), 0 10px 28px rgba(22,32,47,.07);
+
+    --display: 'Gowun Batang', 'Nanum Myeongjo', 'Apple SD Gothic Neo', serif;
+    --body: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:  #0E1521;
+      --surface: #172131;
+      --raised:  #1D293B;
+      --ink:     #E5EAF2;
+      --muted:   #A0ADBF;
+      --faint:   #7B8899;
+      --line:    #2A3548;
+      --navy:    #8CB2EA;
+      --red:     #E88189;
+      --seal:    #F0A6AC;
+      --shadow:  0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:  #0E1521;
+    --surface: #172131;
+    --raised:  #1D293B;
+    --ink:     #E5EAF2;
+    --muted:   #A0ADBF;
+    --faint:   #7B8899;
+    --line:    #2A3548;
+    --navy:    #8CB2EA;
+    --red:     #E88189;
+    --seal:    #F0A6AC;
+    --shadow:  0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16.5px;
+    line-height: 1.75;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  /* 항공우편 봉투의 사선 띠 — 이 문서의 유일한 장식 */
+  .airmail {
+    height: 9px;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--navy) 0 10px,
+      transparent 10px 20px,
+      var(--red) 20px 30px,
+      transparent 30px 40px
+    );
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 20px 96px;
+  }
+
+  /* ── 머리말 ─────────────────────────────────────── */
+  .masthead { padding: 56px 0 40px; }
+  .eyebrow {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    color: var(--red);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(34px, 7vw, 50px);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    margin: 0 0 18px;
+  }
+  .standfirst {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 34em;
+    margin: 0;
+  }
+
+  /* ── 절 ─────────────────────────────────────────── */
+  section { padding-top: 44px; }
+  section + section { border-top: 1px solid var(--line); margin-top: 44px; }
+
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(23px, 4.2vw, 29px);
+    font-weight: 700;
+    line-height: 1.35;
+    text-wrap: balance;
+    margin: 0 0 8px;
+  }
+  .kicker {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    color: var(--faint);
+    margin: 0 0 10px;
+  }
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 32px 0 6px;
+  }
+  p { margin: 0 0 1.05em; max-width: 40em; }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 600; }
+  em.q { font-style: normal; color: var(--navy); font-weight: 600; }
+
+  .lede { font-size: 17.5px; color: var(--muted); max-width: 38em; }
+
+  /* ── 낱말 풀이 ──────────────────────────────────── */
+  .glossary { display: grid; gap: 14px; margin: 26px 0 0; padding: 0; list-style: none; }
+  .term {
+    display: grid;
+    grid-template-columns: 148px 1fr;
+    gap: 4px 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+  }
+  .term__name {
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .term__like {
+    grid-column: 1;
+    font-size: 13px;
+    color: var(--red);
+    font-weight: 500;
+  }
+  .term__body { grid-column: 2; grid-row: 1 / span 2; }
+  .term__body p { margin: 0; font-size: 15.5px; }
+  .term__body p + p { margin-top: .6em; }
+  @media (max-width: 620px) {
+    .term { grid-template-columns: 1fr; gap: 2px; }
+    .term__body { grid-column: 1; grid-row: auto; margin-top: 10px; }
+  }
+
+  /* ── 그림 ───────────────────────────────────────── */
+  figure {
+    margin: 30px 0 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 24px 20px 18px;
+    overflow-x: auto;
+  }
+  figure svg { display: block; width: 100%; max-width: 100%; height: auto; color: var(--ink); }
+  figcaption {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    line-height: 1.65;
+  }
+  .svg-box { fill: var(--raised); stroke: var(--line); }
+  .svg-title { font-family: var(--body); font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .svg-sub { font-family: var(--body); font-size: 12.5px; fill: var(--muted); }
+  .svg-edge { font-family: var(--body); font-size: 12.5px; fill: var(--navy); font-weight: 500; }
+  .svg-seal { font-family: var(--body); font-size: 12px; font-weight: 600; fill: var(--seal); }
+  .svg-open { font-family: var(--body); font-size: 12px; font-weight: 600; fill: var(--navy); }
+  .svg-line { stroke: var(--ink); stroke-width: 1.4; fill: none; opacity: .55; }
+
+  /* ── 표 ─────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin-top: 26px; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 15.5px; }
+  caption { text-align: left; font-size: 14px; color: var(--faint); padding-bottom: 10px; }
+  th, td { text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    font-size: 13px;
+    letter-spacing: .04em;
+    color: var(--faint);
+    font-weight: 600;
+    border-bottom-width: 1.5px;
+  }
+  tbody th { font-weight: 500; color: var(--muted); width: 30%; }
+  td.pw { color: var(--ink); }
+  td.tk { color: var(--ink); background: var(--surface); }
+
+  /* ── 순서 ───────────────────────────────────────── */
+  .steps { list-style: none; counter-reset: s; margin: 26px 0 0; padding: 0; display: grid; gap: 12px; }
+  .steps li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 16px;
+    align-items: start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .steps li::before {
+    content: counter(s);
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--red);
+    line-height: 1.5;
+  }
+  .steps p { margin: 0; font-size: 15.5px; }
+  .steps .note { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* ── 강조 상자 ──────────────────────────────────── */
+  .keep {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--red);
+    border-radius: 4px 10px 10px 4px;
+    padding: 18px 20px;
+    margin-top: 14px;
+  }
+  .keep h3 { margin: 0 0 4px; font-size: 16px; }
+  .keep p { margin: 0; font-size: 15px; color: var(--muted); }
+
+  .aside {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 24px;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .aside strong { color: var(--ink); }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .88em;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 1px 6px;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--faint);
+  }
+
+  a { color: var(--navy); text-underline-offset: 3px; }
+  a:focus-visible, .term:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<div class="airmail"></div>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">처음 만드시는 선교사님께</p>
+    <h1>선교편지가 가는 길</h1>
+    <p class="standfirst">
+      서버도 없고 매달 내는 사용료도 없는데, 어떻게 편지가 후원자님께 닿을까요.
+      낯선 낱말 네 개만 알면 전체가 보입니다.
+    </p>
+  </header>
+
+  <section>
+    <p class="kicker">한눈에</p>
+    <h2>편지는 두 번만 열립니다</h2>
+    <p class="lede">
+      선교사님 손에서 한 번, 후원자님 손에서 한 번. 그 사이에는 봉해진 채로 다닙니다.
+      이 그림 하나가 전체 구조입니다.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 560 424" role="img"
+           aria-label="편지는 선교사 브라우저에서 봉해져 GitHub 창고에 보관되고, 후원자 브라우저에서 비밀번호로 열린다.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" opacity=".55"></path>
+          </marker>
+        </defs>
+
+        <rect class="svg-box" x="40" y="16" width="480" height="94" rx="10"></rect>
+        <text class="svg-title" x="62" y="46">선교사님 브라우저</text>
+        <text class="svg-sub" x="62" y="70">편지를 쓰고, 보내기 직전 봉합니다</text>
+        <text class="svg-sub" x="62" y="90">사진은 드라이브 주소만 적어 둡니다</text>
+        <text class="svg-open" x="498" y="46" text-anchor="end">내용 열림</text>
+
+        <line class="svg-line" x1="280" y1="110" x2="280" y2="162" marker-end="url(#ar)"></line>
+        <text class="svg-edge" x="296" y="132">토큰으로 창고 문을 엽니다</text>
+        <text class="svg-sub" x="296" y="150">— 봉한 편지만 올라갑니다</text>
+
+        <rect class="svg-box" x="40" y="162" width="480" height="94" rx="10"></rect>
+        <text class="svg-title" x="62" y="192">GitHub 창고</text>
+        <text class="svg-sub" x="62" y="216">봉한 편지를 달마다 쌓아 둡니다</text>
+        <text class="svg-sub" x="62" y="236">누가 들여다봐도 글자를 읽을 수 없습니다</text>
+        <text class="svg-seal" x="498" y="192" text-anchor="end">봉해짐</text>
+
+        <line class="svg-line" x1="280" y1="256" x2="280" y2="308" marker-end="url(#ar)"></line>
+        <text class="svg-edge" x="296" y="278">Pages 가 주소를 열어 둡니다</text>
+        <text class="svg-sub" x="296" y="296">— 후원자님은 주소로 들어옵니다</text>
+
+        <rect class="svg-box" x="40" y="308" width="480" height="94" rx="10"></rect>
+        <text class="svg-title" x="62" y="338">후원자님 브라우저</text>
+        <text class="svg-sub" x="62" y="362">비밀번호를 넣으면 봉투가 열립니다</text>
+        <text class="svg-sub" x="62" y="382">지난 편지도 이어서 읽습니다</text>
+        <text class="svg-open" x="498" y="338" text-anchor="end">내용 열림</text>
+      </svg>
+      <figcaption>
+        편지 내용이 글자 그대로 존재하는 곳은 위아래 끝, 두 사람의 브라우저뿐입니다.
+        가운데 창고에는 봉해진 덩어리만 놓입니다.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="kicker">왜 이렇게 만들었나</p>
+    <h2>빌리는 게 아니라, 짓는 것입니다</h2>
+    <p>
+      보통 홈페이지는 <strong>매달 돈을 내고 남의 서버를 빌립니다.</strong>
+      돈이 끊기면 사라지고, 그 회사가 문을 닫아도 사라집니다.
+      선교지 사역은 길게 가는데, 그런 구조는 오래 가지 못합니다.
+    </p>
+    <p>
+      그래서 서버를 아예 쓰지 않았습니다. 편지는 <strong>글자가 담긴 파일</strong>일 뿐이고,
+      그 파일을 무료로 보관해 주는 곳(GitHub)에 두고, 그 보관함을 그대로 웹주소로 열어 두는 것(Pages)입니다.
+      빌린 게 없으니 끊길 것도 없습니다.
+    </p>
+    <div class="aside">
+      대신 한 가지 값을 치릅니다. <strong>선교사님이 창고 주인이 되셔야 합니다.</strong>
+      아래 낱말 네 개가 낯선 이유가 바로 이것이고, 이 문서가 있는 이유이기도 합니다.
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">낱말 넷</p>
+    <h2>교회 사무실에 빗대면</h2>
+    <p class="lede">전부 사무실 물건에 대응됩니다. 하나씩 보시면 어렵지 않습니다.</p>
+
+    <ul class="glossary">
+      <li class="term">
+        <span class="term__name">GitHub</span>
+        <span class="term__like">= 문서 캐비닛</span>
+        <span class="term__body">
+          <p>편지 파일이 쌓이는 창고입니다. 무료이고, 선교사님 노트북이 고장 나도 편지는 그대로 남습니다.</p>
+        </span>
+      </li>
+      <li class="term">
+        <span class="term__name">GitHub Pages</span>
+        <span class="term__like">= 게시판 전환 스위치</span>
+        <span class="term__body">
+          <p>캐비닛 안에만 있으면 아무도 못 봅니다. 이 스위치를 켜면 <strong>주소가 생깁니다.</strong> 후원자님은 그 주소로 들어옵니다.</p>
+        </span>
+      </li>
+      <li class="term">
+        <span class="term__name">토큰</span>
+        <span class="term__like">= 캐비닛 복제키</span>
+        <span class="term__body">
+          <p>앱이 선교사님 대신 캐비닛에 편지를 넣으려면 열쇠가 필요합니다. <strong>마스터키가 아니라 이 캐비닛 하나만 열리는 복제키</strong>입니다.</p>
+          <p>선교사님 브라우저에만 보관되고, 후원자님께도 저에게도 가지 않습니다.</p>
+        </span>
+      </li>
+      <li class="term">
+        <span class="term__name">비밀번호</span>
+        <span class="term__like">= 편지 봉투를 봉하는 밀랍</span>
+        <span class="term__body">
+          <p>편지를 봉하고 여는 데만 씁니다. 후원자님께 링크와 함께 알려 드리는 값입니다.</p>
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">가장 헷갈리는 둘</p>
+    <h2>비밀번호와 토큰은 전혀 다릅니다</h2>
+    <p>
+      이름이 둘 다 &lsquo;비밀&rsquo;스러워서 섞이기 쉽지만, 쓰는 사람도 쓰는 곳도 다릅니다.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>둘을 바꿔 넣으면 아무것도 되지 않습니다.</caption>
+        <thead>
+          <tr><th scope="col"></th><th scope="col">비밀번호</th><th scope="col">토큰</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">누가 씁니까</th><td class="pw">후원자님</td><td class="tk">앱 (선교사님 대신)</td></tr>
+          <tr><th scope="row">무엇을 합니까</th><td class="pw">편지 봉투를 엽니다</td><td class="tk">창고 문을 엽니다</td></tr>
+          <tr><th scope="row">누구에게 알려 줍니까</th><td class="pw">후원자님께 알려 드립니다</td><td class="tk">아무에게도 알리지 않습니다</td></tr>
+          <tr><th scope="row">어디에 있습니까</th><td class="pw">선교사님 기억 속, 후원자님 손</td><td class="tk">선교사님 브라우저 안에만</td></tr>
+          <tr><th scope="row">잃어버리면</th><td class="pw">그 편지를 <strong>영영 못 엽니다</strong></td><td class="tk">새로 만들면 됩니다. 편지는 무사합니다</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">토큰에 대해</p>
+    <h2>만료일이 있는 이유</h2>
+    <p>
+      토큰을 만들 때 <strong>만료일</strong>을 고르게 되어 있습니다. 불편해 보이지만 이것이 안전장치입니다.
+      열쇠를 영원히 살려 두면, 어느 컴퓨터에 두고 온 열쇠도 영원히 유효합니다.
+      기한이 있으면 잊고 있던 열쇠가 저절로 무효가 됩니다.
+    </p>
+    <p>
+      실무적으로는 <strong>가능한 한 길게(1년) 잡으시길</strong> 권합니다.
+      해마다 한 번 새로 만드는 정도의 수고면 충분합니다.
+    </p>
+
+    <h3>만료되면 어떻게 됩니까</h3>
+    <p>
+      발행할 때 앱이 이렇게 알려 드리고 설정 화면으로 데려갑니다 &mdash;
+      <em class="q">&ldquo;토큰이 유효하지 않습니다. 설정에서 토큰을 다시 발급해 입력해 주세요.&rdquo;</em>
+      새 토큰을 만들어 붙여넣으면 그대로 이어집니다.
+    </p>
+    <div class="keep">
+      <h3>이때 쓰던 편지는 사라지지 않습니다</h3>
+      <p>발행에 실패해도 작성 중이던 내용은 그대로 남도록 만들었습니다. 토큰만 바꿔 끼우고 다시 발행하시면 됩니다.</p>
+    </div>
+    <div class="aside">
+      이미 <strong>발행한 편지에는 아무 영향이 없습니다.</strong> 토큰은 편지를 넣을 때만 쓰이고,
+      후원자님이 읽으실 때는 쓰이지 않습니다. 토큰이 만료돼도 후원자님은 평소처럼 편지를 보십니다.
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">사진</p>
+    <h2>사진만 다른 길로 갑니다</h2>
+    <p class="lede">
+      이 부분이 두 번째로 헷갈리는 곳입니다. 편지 글은 GitHub로 가지만,
+      사진은 <strong>구글 드라이브에서 후원자님께 곧바로</strong> 갑니다.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 700 250" role="img"
+           aria-label="편지 글은 봉해져 GitHub로, 사진은 구글 드라이브에서 후원자에게 직접 전달된다.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" opacity=".55"></path>
+          </marker>
+        </defs>
+        <rect class="svg-box" x="8" y="88" width="132" height="74" rx="10"></rect>
+        <text class="svg-title" x="74" y="118" text-anchor="middle">선교사님</text>
+        <text class="svg-sub" x="74" y="140" text-anchor="middle">편지 작성</text>
+
+        <path class="svg-line" d="M 140 112 C 190 112 200 60 248 60" marker-end="url(#ar2)"></path>
+        <path class="svg-line" d="M 140 138 C 190 138 200 190 248 190" marker-end="url(#ar2)"></path>
+        <text class="svg-edge" x="152" y="78">글 &mdash; 봉해서</text>
+        <text class="svg-edge" x="152" y="216">사진 &mdash; 주소만</text>
+
+        <rect class="svg-box" x="248" y="22" width="204" height="74" rx="10"></rect>
+        <text class="svg-title" x="350" y="52" text-anchor="middle">GitHub 창고</text>
+        <text class="svg-seal" x="350" y="74" text-anchor="middle">봉해진 편지</text>
+
+        <rect class="svg-box" x="248" y="154" width="204" height="74" rx="10"></rect>
+        <text class="svg-title" x="350" y="184" text-anchor="middle">구글 드라이브</text>
+        <text class="svg-sub" x="350" y="206" text-anchor="middle">사진 원본 (공개 상태)</text>
+
+        <path class="svg-line" d="M 452 60 C 505 60 512 104 556 108" marker-end="url(#ar2)"></path>
+        <path class="svg-line" d="M 452 190 C 505 190 512 146 556 142" marker-end="url(#ar2)"></path>
+
+        <rect class="svg-box" x="556" y="88" width="136" height="74" rx="10"></rect>
+        <text class="svg-title" x="624" y="118" text-anchor="middle">후원자님 화면</text>
+        <text class="svg-sub" x="624" y="140" text-anchor="middle">한 통으로 보임</text>
+      </svg>
+      <figcaption>
+        후원자님 화면에서는 한 통의 편지로 보이지만, 글과 사진은 서로 다른 곳에서 도착합니다.
+      </figcaption>
+    </figure>
+
+    <h3>그래서 두 가지가 따라옵니다</h3>
+    <p>
+      첫째, 드라이브에서 사진을 <strong>&lsquo;링크가 있는 모든 사용자&rsquo;</strong>로 열어 두셔야 합니다.
+      그러지 않으면 후원자님 화면에서만 사진이 빠집니다.
+      선교사님은 구글에 로그인돼 있어서 <strong>잘못돼도 화면에는 보입니다.</strong>
+      앱이 발행 전에 굳이 한 번 더 여쭤보는 이유입니다.
+    </p>
+    <p>
+      둘째, 사진은 봉투 밖에 있습니다. 글과 달리 <strong>암호화되지 않습니다.</strong>
+      주소를 아는 사람은 사진을 볼 수 있으니, 민감한 사진은 올리지 않으시는 편이 좋습니다.
+    </p>
+  </section>
+
+  <section>
+    <p class="kicker">목록</p>
+    <h2>편지 목록은 앱이 관리합니다</h2>
+    <p>
+      선교사님이 손댈 것이 없습니다. <strong>발행 버튼을 누를 때마다</strong> 앱이 목록에 그 편지를 넣고
+      최신순으로 정렬합니다. 편지를 지우면 목록에서도 함께 빠집니다.
+    </p>
+    <p>목록 화면이 두 개인데, 보는 사람과 하는 일이 다릅니다.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">화면</th><th scope="col">보는 사람</th><th scope="col">하는 일</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">편지 목록</th><td>선교사님만</td><td>수정 · 삭제 · 링크 복사</td></tr>
+          <tr><th scope="row">지난 선교편지</th><td>후원자님</td><td>읽기만 (제목은 비밀번호를 넣어야 보임)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aside">
+      후원자님은 <strong>주소 하나만 즐겨찾기</strong> 해 두시면 됩니다. 매달 링크를 새로 받지 않아도
+      들어오실 때마다 최신 편지가 열리고, 편지 아래 &lsquo;지난 편지&rsquo;로 예전 소식을 이어 보십니다.
+      비밀번호도 한 번만 넣으면 지난 편지들이 함께 열립니다.
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">매달</p>
+    <h2>실제로 하시는 일은 네 가지</h2>
+    <p class="lede">지금까지의 설명은 &lsquo;왜&rsquo;였고, 매달 반복되는 &lsquo;무엇&rsquo;은 이것이 전부입니다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <p><strong>편지를 씁니다.</strong></p>
+          <p class="note">쓰는 동안 자동으로 임시저장됩니다. 창을 닫았다 열어도 남아 있습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>사진을 넣습니다.</strong></p>
+          <p class="note">드라이브 공유 링크를 붙여넣으면 바로 미리보기로 확인됩니다. 안 보이면 그 자리에서 알려 줍니다.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>발행을 누릅니다.</strong></p>
+          <p class="note">봉하고, 창고에 넣고, 목록을 갱신하는 일을 앱이 한 번에 합니다. 1분 안에 주소에 반영됩니다.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p><strong>링크와 비밀번호를 함께 보냅니다.</strong></p>
+          <p class="note">둘 중 하나만 보내면 후원자님이 편지를 여실 수 없습니다.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">끝으로</p>
+    <h2>꼭 기억하실 세 가지</h2>
+
+    <div class="keep">
+      <h3>비밀번호를 잊으면 그 편지는 다시 열리지 않습니다</h3>
+      <p>복구 수단이 없습니다. 이것은 결함이 아니라, 아무도 못 열게 만든 구조의 대가입니다. 적어 두세요.</p>
+    </div>
+    <div class="keep">
+      <h3>사진 공유 설정은 시크릿 창으로 확인하세요</h3>
+      <p>선교사님 화면은 로그인 상태라 믿을 수 없습니다. 시크릿 창으로 편지 링크를 열어 보시면 후원자님이 보시는 그대로입니다.</p>
+    </div>
+    <div class="keep">
+      <h3>공용 컴퓨터에서는 쓰지 마세요</h3>
+      <p>토큰이 그 브라우저에 남습니다. 열쇠를 두고 나오는 셈입니다. 혹시 그랬다면 GitHub에서 그 토큰만 폐기하시면 됩니다.</p>
+    </div>
+  </section>
+
+  <footer>
+    이 문서는 선교편지 앱의 구조를 설명합니다. 실제 사용 순서는 저장소의 <code>README.md</code>에,
+    기술 명세는 <code>선교편지제작_PRD_v2.md</code>에 있습니다.
+  </footer>
+
+</div>
+</body>
+</html>
