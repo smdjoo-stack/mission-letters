@@ -20,7 +20,9 @@
 //       { "type": "text", "value": "..." },
 //       { "type": "image", "driveId": "구글드라이브파일ID", "caption": "선택" }
 //     ],
-//     "closing": "..."
+//     "closing": "...",
+//     "prayers": [ { "title": "기도제목", "text": "내용" } ],
+//     "support": { "note": "안내 문구", "bank": "국민은행", "account": "000-00-000000", "holder": "홍길동" }
 //   }
 // }
 

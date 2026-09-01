@@ -23,15 +23,13 @@ function repoConfig() {
   return s;
 }
 
-async function request(path, { method = 'GET', body, token, raw } = {}) {
-  const s = getSettings();
-  const auth = token ?? s.githubToken;
+async function request(path, { method = 'GET', body, raw } = {}) {
+  // 토큰을 쓰지 않는다 — 공개 저장소 읽기만 가능하고, 쓰기는 writeBlocked() 에서 막힌다.
   const res = await fetch(`${API}${path}`, {
     method,
     headers: {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
-      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
       ...(body ? { 'Content-Type': 'application/json' } : {})
     },
     body: body ? JSON.stringify(body) : undefined
@@ -46,6 +44,14 @@ async function request(path, { method = 'GET', body, token, raw } = {}) {
   return raw ? res : res.json();
 }
 
+/** 브라우저에서의 쓰기는 더 이상 지원하지 않는다 — scripts/publish-letter.mjs 로 발행한다. */
+export function writeBlocked() {
+  return new GitHubError(
+    '브라우저에서 바로 발행하는 기능은 꺼져 있습니다. ' +
+    '저장소에서 scripts/publish-letter.mjs 로 발행해 주세요.',
+    0, 'WRITE_DISABLED');
+}
+
 function statusCode(status) {
   if (status === 401) return 'BAD_TOKEN';
   if (status === 403) return 'FORBIDDEN';
@@ -55,37 +61,12 @@ function statusCode(status) {
 
 function describeError(status, message) {
   switch (status) {
-    case 401: return '토큰이 유효하지 않습니다. 설정에서 토큰을 다시 발급해 입력해 주세요.';
-    case 403: return '권한이 없습니다. 토큰에 이 저장소의 Contents 쓰기 권한이 있는지 확인해 주세요.';
+    case 401:
+    case 403: return '저장소에 접근할 권한이 없습니다. 저장소가 공개인지 확인해 주세요.';
     case 409:
     case 422: return '다른 곳에서 먼저 변경되었습니다. 다시 시도해 주세요.';
     default:  return `GitHub 오류 (${status})${message ? ': ' + message : ''}`;
   }
-}
-
-/** 연결 테스트 — 저장소 접근과 쓰기 권한을 확인한다. */
-export async function testConnection({ repoOwner, repoName, githubToken }) {
-  const res = await fetch(`${API}/repos/${repoOwner}/${repoName}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      Authorization: `Bearer ${githubToken}`
-    }
-  });
-  if (res.status === 404) {
-    throw new GitHubError('저장소를 찾을 수 없습니다. 소유자와 저장소 이름, 그리고 토큰 권한 범위를 확인해 주세요.', 404, 'NO_REPO');
-  }
-  if (res.status === 401) {
-    throw new GitHubError('토큰이 유효하지 않습니다.', 401, 'BAD_TOKEN');
-  }
-  if (!res.ok) {
-    throw new GitHubError(describeError(res.status), res.status, statusCode(res.status));
-  }
-  const repo = await res.json();
-  if (!repo.permissions?.push) {
-    throw new GitHubError('이 토큰에는 쓰기 권한이 없습니다. Contents: Read and write 로 발급해 주세요.', 403, 'NO_WRITE');
-  }
-  return { private: repo.private, defaultBranch: repo.default_branch, fullName: repo.full_name };
 }
 
 /** 파일 읽기 → { data, sha } | null(없음) */
@@ -100,6 +81,8 @@ export async function getFile(path) {
 
 /** 파일 쓰기(생성 또는 수정). sha 를 주면 수정, 없으면 생성. */
 export async function putFile(path, data, { sha, message }) {
+  throw writeBlocked();
+  /* eslint-disable no-unreachable */
   const s = repoConfig();
   const result = await request(`/repos/${s.repoOwner}/${s.repoName}/contents/${path}`, {
     method: 'PUT',
@@ -114,6 +97,8 @@ export async function putFile(path, data, { sha, message }) {
 }
 
 export async function deleteFile(path, { sha, message }) {
+  throw writeBlocked();
+  /* eslint-disable no-unreachable */
   const s = repoConfig();
   await request(`/repos/${s.repoOwner}/${s.repoName}/contents/${path}`, {
     method: 'DELETE',

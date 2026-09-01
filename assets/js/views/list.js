@@ -138,7 +138,6 @@ function renderSetupPrompt(root) {
   const settings = getSettings();
   const missing = [];
   if (!settings.repoOwner || !settings.repoName) missing.push('GitHub 저장소');
-  if (!settings.githubToken) missing.push('GitHub 토큰');
 
   root.innerHTML = `
     <div class="page page--narrow">

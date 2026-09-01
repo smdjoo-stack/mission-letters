@@ -6,7 +6,7 @@
 - 편지 본문은 **비밀번호로 암호화**되어 저장됩니다. 저장소가 공개여도 내용이 노출되지 않습니다.
 - 사진은 **구글 드라이브 공유 링크**를 붙여넣어 넣습니다.
 - 후원자는 **링크 하나**로 읽고, **A4 PDF**로 저장할 수 있습니다.
-- 편지 발행에 **git 명령이 필요 없습니다.** 앱의 "발행" 버튼이 대신 합니다.
+- 앱은 **GitHub 토큰을 쓰지 않습니다.** 발행은 저장소에서 `scripts/publish-letter.mjs` 로 합니다.
 
 **처음이시라면** [선교편지가 가는 길](guide.html) 을 먼저 읽어보세요 — 이 구조가 왜 이런지 그림으로 설명합니다.
 (웹에서 보기: `https://smdjoo-stack.github.io/mission-letters/guide.html`)
@@ -34,21 +34,10 @@
 Branch 를 **main / (root)** 로 두고 저장합니다.
 1~2분 뒤 `https://<계정>.github.io/<저장소>/` 주소가 열립니다.
 
-### 4. 토큰 발급하고 앱에 입력하기
+### 4. 앱 설정 열기
 
-[fine-grained 토큰 발급 화면](https://github.com/settings/personal-access-tokens/new) 에서:
-
-| 항목 | 값 |
-|---|---|
-| Token name | 아무 이름 (예: `선교편지`) |
-| Repository access | **Only select repositories** → 위에서 만든 저장소 하나만 |
-| Permissions → Repository permissions → **Contents** | **Read and write** |
-
-만들어진 `github_pat_...` 값을 앱의 **설정** 화면에 붙여넣고 **연결 테스트**를 누릅니다.
-"연결됨"이 뜨면 준비가 끝났습니다.
-
-> 토큰은 이 브라우저에만 저장됩니다. **공용 컴퓨터에서는 사용하지 마세요.**
-> 유출된 것 같으면 [토큰 목록](https://github.com/settings/tokens)에서 즉시 삭제(Revoke)할 수 있습니다.
+앱의 **설정** 화면에서 선교사 이름과 저장소(소유자·이름·브랜치)만 확인하면 됩니다.
+토큰은 필요하지 않습니다.
 
 ---
 
@@ -56,10 +45,17 @@ Branch 를 **main / (root)** 로 두고 저장합니다.
 
 1. **새 편지 쓰기** → 제목과 본문을 씁니다. 쓰는 동안 자동으로 임시저장됩니다.
 2. **사진 추가** → 구글 드라이브 공유 링크를 붙여넣습니다. 바로 미리보기로 확인됩니다.
-3. **발행** → 버튼 한 번이면 저장소에 올라가고 공유 링크가 나옵니다.
-4. 후원자에게 **링크와 비밀번호**를 함께 보냅니다.
+3. **미리보기**로 후원자에게 보일 모습을 확인합니다.
+4. **발행** → 저장소에서 아래 명령을 돌립니다.
 
-편지는 언제든 **수정**해서 다시 발행할 수 있습니다. 링크는 그대로입니다.
+```bash
+node scripts/publish-letter.mjs <편지-내용.json>
+git add letters && git commit -m "편지 발행: 2026-12" && git push
+```
+
+5. 후원자에게 **링크와 비밀번호**를 함께 보냅니다.
+
+편지는 같은 `id` 로 다시 발행하면 **수정**됩니다. 링크는 그대로입니다.
 
 ---
 
@@ -96,8 +92,9 @@ python3 -m http.server 4173
 | 파일 | 역할 |
 |---|---|
 | `assets/js/crypto.js` | PBKDF2 + AES-GCM 암·복호화 |
-| `assets/js/github.js` | Contents API — 발행 |
+| `assets/js/github.js` | Contents API 읽기 (쓰기는 막혀 있음) |
 | `assets/js/drive.js` | 드라이브 링크 파싱·검증 |
 | `assets/js/letters.js` | 편지 데이터 계층 |
 | `assets/js/render.js` | 편지 렌더링·인쇄 (보기/미리보기 공용) |
 | `assets/js/views/` | 화면 4개 |
+| `scripts/publish-letter.mjs` | 편지 암호화 + 발행 (브라우저 없이) |

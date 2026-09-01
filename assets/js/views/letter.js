@@ -3,7 +3,7 @@ import { $, esc, periodLabel, toast } from '../util.js';
 import { getSettings, rememberReaderPassword, recallReaderPassword, forgetReaderPassword } from '../store.js';
 import { loadLetterFile } from '../letters.js';
 import { decryptBody } from '../crypto.js';
-import { letterHTML, loadLetterImages, printLetter } from '../render.js';
+import { letterHTML, loadLetterImages, printLetter, bindPrayers } from '../render.js';
 import { findNeighbors } from './archive.js';
 
 export async function renderLetter(root, id) {
@@ -126,6 +126,7 @@ function showLetter(root, meta, body, id) {
 
   const article = $('.letter', root);
   loadLetterImages(article);
+  bindPrayers(article);
   paintNeighbors(root, id);
 
   $('#print-btn', root).onclick = async e => {

@@ -11,8 +11,11 @@ const DEFAULTS = {
   repoOwner: 'smdjoo-stack',
   repoName: 'mission-letters',
   repoBranch: 'main',
-  githubToken: '',
-  defaultPassword: ''
+  defaultPassword: '',
+  supportNote: '',
+  supportBank: '',
+  supportAccount: '',
+  supportHolder: ''
 };
 
 function safeParse(raw, fallback) {
@@ -29,14 +32,10 @@ export function saveSettings(patch) {
   return next;
 }
 
-export function clearToken() {
-  saveSettings({ githubToken: '' });
-}
-
-/** 발행 기능을 쓸 수 있는 상태인가 (= 작성자 모드) */
+/** 작성자 모드인가 — 저장소 위치만 알면 된다 (토큰은 쓰지 않는다) */
 export function isConfigured() {
   const s = getSettings();
-  return Boolean(s.repoOwner && s.repoName && s.githubToken);
+  return Boolean(s.repoOwner && s.repoName);
 }
 
 /** 저장소 위치만 알면 읽기는 가능하다 (토큰 없이 공개 파일 읽기) */

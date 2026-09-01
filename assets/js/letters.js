@@ -2,7 +2,6 @@
 
 import { getFile, putFile, deleteFile, fetchPublicJSON } from './github.js';
 import { encryptBody, decryptBody } from './crypto.js';
-import { isConfigured } from './store.js';
 import { todayISODate } from './util.js';
 
 export const SCHEMA_VERSION = 1;
@@ -16,22 +15,20 @@ export function emptyBody(missionaryName = '') {
     period: '',
     greeting: '사랑하는 후원자님께',
     blocks: [{ type: 'text', value: '' }],
-    closing: ''
+    closing: '',
+    prayers: [],                                   // [{ title, text }]
+    support: { note: '', bank: '', account: '', holder: '' }
   };
 }
 
-/** 목록 읽기. 작성자(토큰 보유)는 API 로 최신본을, 그 외에는 배포된 파일을 읽는다. */
+/** 목록 읽기 — 토큰을 쓰지 않으므로 배포된 파일을 그대로 읽는다(캐시 무효화 포함). */
 export async function loadIndex() {
-  if (isConfigured()) {
-    const file = await getFile(INDEX_PATH);
-    return { index: file?.data ?? { schemaVersion: SCHEMA_VERSION, letters: [] }, sha: file?.sha };
-  }
   const data = await fetchPublicJSON(INDEX_PATH);
   return { index: data ?? { schemaVersion: SCHEMA_VERSION, letters: [] }, sha: undefined };
 }
 
 /** 편지 파일(암호문 상태) 읽기 */
-export async function loadLetterFile(id, { preferApi = isConfigured() } = {}) {
+export async function loadLetterFile(id, { preferApi = false } = {}) {
   if (preferApi) {
     const file = await getFile(letterPath(id));
     return file ? { file: file.data, sha: file.sha } : null;

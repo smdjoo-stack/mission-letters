@@ -1,10 +1,10 @@
 // 편지 작성/수정 — PRD v2 §7.2
 import { $, $$, esc, toast, dialog, currentMonthId, periodLabel, copyText } from '../util.js';
 import { getSettings, saveDraft, loadDraft, clearDraft } from '../store.js';
-import { emptyBody, openLetter, publishLetter, countPhotos } from '../letters.js';
+import { emptyBody, openLetter, countPhotos } from '../letters.js';
 import { checkPassword } from '../crypto.js';
 import { extractDriveId, verifyDriveImage, loadDriveImage, SHARE_HELP, SHARE_CONFIRM, PHOTO_LIMIT_HINT } from '../drive.js';
-import { letterHTML, loadLetterImages } from '../render.js';
+import { letterHTML, loadLetterImages, bindPrayers } from '../render.js';
 import { shareLink } from '../github.js';
 import { navigate } from '../router.js';
 
@@ -59,6 +59,20 @@ export async function renderWrite(root, editId) {
       toast('작성 중이던 내용을 복구했습니다.', 'info');
     }
     if (!state.body.period) state.body.period = periodLabel(state.id);
+  }
+
+  // 옛 임시저장에는 없던 항목 — 없으면 만들어 둔다.
+  if (!Array.isArray(state.body.prayers)) state.body.prayers = [];
+  if (!state.body.support) state.body.support = { note: '', bank: '', account: '', holder: '' };
+  // 새 편지는 설정에 적어 둔 후원 안내로 시작한다.
+  const sup = state.body.support;
+  if (!state.isEdit && !sup.note && !sup.bank && !sup.account && !sup.holder) {
+    state.body.support = {
+      note: settings.supportNote || '',
+      bank: settings.supportBank || '',
+      account: settings.supportAccount || '',
+      holder: settings.supportHolder || ''
+    };
   }
 
   paint(root);
@@ -118,6 +132,40 @@ function paint(root) {
       </section>
 
       <section class="card">
+        <div class="card__head">
+          <h2 class="card__title">기도제목</h2>
+          <span class="card__meta">후원자 화면에 번호가 붙은 목록으로 나옵니다</span>
+        </div>
+        <div id="prayers" class="blocks"></div>
+        <div class="blocks__add">
+          <button type="button" class="btn btn--ghost" id="add-prayer">＋ 기도제목 추가</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card__title">후원 안내</h2>
+        <p class="card__lead">편지 맨 아래에 붙습니다. 비워 두면 이 편지에는 나오지 않습니다.</p>
+        <label class="field">
+          <span class="field__label">안내 문구</span>
+          <textarea id="supportNote" rows="2" placeholder="기도와 후원으로 함께해 주셔서 감사합니다.">${esc(state.body.support.note || '')}</textarea>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">은행</span>
+            <input id="supportBank" type="text" value="${esc(state.body.support.bank || '')}" placeholder="국민은행">
+          </label>
+          <label class="field">
+            <span class="field__label">계좌번호</span>
+            <input id="supportAccount" type="text" value="${esc(state.body.support.account || '')}" placeholder="000-00-000000" autocapitalize="none" spellcheck="false">
+          </label>
+        </div>
+        <label class="field field--short">
+          <span class="field__label">예금주</span>
+          <input id="supportHolder" type="text" value="${esc(state.body.support.holder || '')}" placeholder="홍길동">
+        </label>
+      </section>
+
+      <section class="card">
         <h2 class="card__title">비밀번호</h2>
         <div class="field-row">
           <label class="field">
@@ -135,7 +183,7 @@ function paint(root) {
       <div class="sticky-bar no-print">
         <span class="sticky-bar__status" id="save-status"></span>
         <button type="button" class="btn btn--ghost" id="preview-btn">미리보기</button>
-        <button type="button" class="btn btn--primary" id="publish-btn">${state.isEdit ? '수정 발행' : '발행'}</button>
+        <button type="button" class="btn btn--primary" id="deploy-btn">${state.isEdit ? '수정 배포' : '배포'}</button>
       </div>
     </div>`;
 
@@ -150,8 +198,16 @@ function paint(root) {
     last?.focus();
   };
   $('#add-photo', root).onclick = () => addPhoto(root);
+  paintPrayers(root);
+  $('#add-prayer', root).onclick = () => {
+    state.body.prayers.push({ title: '', text: '' });
+    paintPrayers(root);
+    persist(root);
+    const last = root.querySelectorAll('#prayers input')[state.body.prayers.length - 1];
+    last?.focus();
+  };
   $('#preview-btn', root).onclick = () => preview();
-  $('#publish-btn', root).onclick = () => publish(root);
+  $('#deploy-btn', root).onclick = () => deploy(root);
 }
 
 function bindFields(root) {
@@ -176,8 +232,60 @@ function bindFields(root) {
       persist(root);
     };
   }
+  for (const [id, key] of Object.entries({
+    supportNote: 'note', supportBank: 'bank', supportAccount: 'account', supportHolder: 'holder'
+  })) {
+    const input = $('#' + id, root);
+    input.oninput = () => { state.body.support[key] = input.value; persist(root); };
+  }
   $('#password', root).oninput = e => { state.password = e.target.value; persist(root); };
   $('#hint', root).oninput = e => { state.hint = e.target.value; persist(root); };
+}
+
+// ── 기도제목 편집기 ────────────────────────────────────────────────
+function paintPrayers(root) {
+  const wrap = $('#prayers', root);
+  if (!wrap) return;
+
+  wrap.innerHTML = state.body.prayers.map((prayer, index) => `
+    <div class="block" data-i="${index}">
+      <div class="block__tools">
+        <button type="button" data-pact="up"     data-i="${index}" title="위로"   ${index === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" data-pact="down"   data-i="${index}" title="아래로" ${index === state.body.prayers.length - 1 ? 'disabled' : ''}>↓</button>
+        <button type="button" data-pact="remove" data-i="${index}" title="삭제">✕</button>
+      </div>
+      <label class="field">
+        <span class="field__label">제목 ${index + 1}</span>
+        <input type="text" data-pfield="title" data-i="${index}" value="${esc(prayer.title || '')}" placeholder="다시 열린 마을 길">
+      </label>
+      <label class="field">
+        <span class="field__label">내용</span>
+        <textarea rows="2" data-pfield="text" data-i="${index}" placeholder="무엇을 위해 기도해 주시면 좋을지 적어 주세요.">${esc(prayer.text || '')}</textarea>
+      </label>
+    </div>`).join('');
+
+  if (!state.body.prayers.length) {
+    wrap.innerHTML = '<p class="field__hint">아직 기도제목이 없습니다. 없으면 편지에 이 부분이 나오지 않습니다.</p>';
+  }
+
+  $$('[data-pfield]', wrap).forEach(input => {
+    input.oninput = () => {
+      state.body.prayers[Number(input.dataset.i)][input.dataset.pfield] = input.value;
+      persist(root);
+    };
+  });
+
+  $$('[data-pact]', wrap).forEach(button => {
+    button.onclick = () => {
+      const i = Number(button.dataset.i);
+      const list = state.body.prayers;
+      if (button.dataset.pact === 'remove') list.splice(i, 1);
+      if (button.dataset.pact === 'up' && i > 0) list.splice(i - 1, 0, list.splice(i, 1)[0]);
+      if (button.dataset.pact === 'down' && i < list.length - 1) list.splice(i + 1, 0, list.splice(i, 1)[0]);
+      paintPrayers(root);
+      persist(root);
+    };
+  });
 }
 
 // ── 블록 편집기 ────────────────────────────────────────────────────
@@ -370,13 +478,42 @@ function preview() {
     </div>`;
   document.body.appendChild(back);
   loadLetterImages(back);
+  bindPrayers(back);
   const close = () => back.remove();
   back.querySelector('[data-act=close]').onclick = close;
   back.onclick = e => { if (e.target === back) close(); };
 }
 
-// ── 발행 — PRD §6.1 ────────────────────────────────────────────────
-async function publish(root) {
+// ── 배포 — 브라우저는 저장소에 직접 쓰지 않는다(github.js writeBlocked).
+// 여기서는 scripts/publish-letter.mjs 가 그대로 먹는 내용 파일을 내려주고, 발행은 저장소에서 한다.
+function deployFileName() {
+  return `letter-${state.id}.json`;
+}
+
+function deployPayload() {
+  const hint = state.hint.trim();
+  return {
+    id: state.id,
+    password: state.password,
+    ...(hint ? { hint } : {}),
+    publishedAt: state.publishedAt || `${state.id}-01`,
+    body: state.body
+  };
+}
+
+function downloadJSON(name, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function deploy(root) {
   const check = checkPassword(state.password);
   if (!check.ok) { toast(check.message, 'bad'); $('#password', root).focus(); return; }
   if (!state.body.title.trim()) { toast('제목을 입력해 주세요.', 'bad'); $('#title', root).focus(); return; }
@@ -388,8 +525,8 @@ async function publish(root) {
   let sharingChecked = photos === 0;
 
   const confirmed = await dialog({
-    title: state.isEdit ? '편지를 수정 발행합니다' : '편지를 발행합니다',
-    confirmLabel: '발행하기',
+    title: state.isEdit ? '수정한 편지를 내려받습니다' : '편지 내용을 내려받습니다',
+    confirmLabel: '배포 파일 내려받기',
     content: `
       <ul class="summary">
         <li><span>편지</span><strong>${esc(state.body.title)}</strong></li>
@@ -400,6 +537,10 @@ async function publish(root) {
       ${check.warn ? `<div class="callout callout--warn">${esc(check.message)}</div>` : ''}
       ${photos ? `<label class="inline-check confirm-check"><input type="checkbox" id="share-ok"> ${esc(SHARE_CONFIRM)}</label>` : ''}
       ${state.isEdit ? '<div class="callout">기존에 발행한 편지를 덮어씁니다. 후원자 링크는 그대로입니다.</div>' : ''}
+      <div class="callout">
+        <strong>이 버튼은 아직 공개하지 않습니다.</strong>
+        내용 파일을 내려받기만 합니다. 저장소에서 <code>scripts/publish-letter.mjs</code> 로 발행해야 후원자가 볼 수 있습니다.
+      </div>
       <div class="callout callout--warn">
         <strong>비밀번호를 잊으면 이 편지를 다시 열 수 없습니다.</strong> 편지는 이 비밀번호로 암호화됩니다.
       </div>`,
@@ -416,52 +557,51 @@ async function publish(root) {
   });
   if (!confirmed) return;
 
-  const button = $('#publish-btn', root);
+  const button = $('#deploy-btn', root);
   const status = $('#save-status', root);
   button.disabled = true;
-  button.textContent = '발행 중…';
+  button.textContent = '내려받는 중…';
   status.textContent = '';
 
+  const name = deployFileName();
   try {
-    await publishLetter({
-      id: state.id,
-      body: state.body,
-      password: state.password,
-      hint: state.hint.trim(),
-      publishedAt: state.publishedAt
-    });
-    clearDraft(state.id);
-    await showPublished();
-    navigate('/list');
+    downloadJSON(name, deployPayload());
+    // 임시저장은 지우지 않는다 — 아직 발행 전이라 이 화면이 유일한 원본이다.
+    status.textContent = '배포 파일을 내려받았습니다.';
+    // 안내 창을 띄우기 전에 버튼을 되돌린다 — 창이 열려 있는 동안 '내려받는 중…'으로 남지 않게.
+    button.disabled = false;
+    button.textContent = state.isEdit ? '수정 배포' : '배포';
+    await showDeployed(name);
   } catch (err) {
-    // 실패해도 작성 내용은 임시저장에 남아 있다 — 입력을 잃지 않는다.
-    status.textContent = '발행하지 못했습니다. 작성 내용은 그대로 남아 있습니다.';
+    status.textContent = '파일을 내려받지 못했습니다. 작성 내용은 그대로 남아 있습니다.';
     toast(err.message, 'bad');
-    if (err.code === 'BAD_TOKEN' || err.code === 'NO_REPO') {
-      setTimeout(() => navigate('/settings'), 1500);
-    }
   } finally {
     button.disabled = false;
-    button.textContent = state.isEdit ? '수정 발행' : '발행';
+    button.textContent = state.isEdit ? '수정 배포' : '배포';
   }
 }
 
-async function showPublished() {
+async function showDeployed(fileName) {
   const link = shareLink(state.id);
+  const command = `node scripts/publish-letter.mjs ~/Downloads/${fileName}`;
   await dialog({
-    title: '발행했습니다',
-    confirmLabel: '링크 복사하고 닫기',
+    title: '배포 파일을 내려받았습니다',
+    confirmLabel: '명령 복사하고 닫기',
     cancelLabel: '닫기',
     content: `
-      <p class="dialog__lead">아래 링크와 비밀번호를 후원자에게 함께 알려 주세요.</p>
+      <p class="dialog__lead">아직 후원자에게 공개되지 않았습니다. 저장소에서 아래 명령을 실행하고 push 하면 공개됩니다.</p>
       <div class="share">
-        <div class="share__row"><span>링크</span><code id="share-url">${esc(link)}</code></div>
+        <div class="share__row"><span>파일</span><code>${esc(fileName)}</code></div>
+        <div class="share__row"><span>명령</span><code>${esc(command)}</code></div>
+      </div>
+      <div class="share">
+        <div class="share__row"><span>링크</span><code>${esc(link)}</code></div>
         <div class="share__row"><span>비밀번호</span><code>${esc(state.password)}</code></div>
       </div>
       <div class="callout">
-        GitHub Pages 반영에 <strong>최대 1분</strong>이 걸릴 수 있습니다. 링크가 바로 열리지 않으면 잠시 뒤 다시 시도해 주세요.
+        발행 뒤 GitHub Pages 반영에 <strong>최대 1분</strong>이 걸릴 수 있습니다.
       </div>`,
-    onMount: { validate() { copyText(`${link}\n비밀번호: ${state.password}`); toast('링크를 복사했습니다.', 'good'); return true; } }
+    onMount: { validate() { copyText(command); toast('명령을 복사했습니다.', 'good'); return true; } }
   });
 }
 
