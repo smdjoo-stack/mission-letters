@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "2026-09",
+  "publishedAt": "2026-09-01",
+  "updatedAt": "2026-09-01T05:00:00.000Z",
+  "crypto": {
+    "alg": "AES-GCM",
+    "kdf": "PBKDF2-SHA256",
+    "iterations": 210000,
+    "salt": "dQeCJmipy0OdbFVU9Nhwjw==",
+    "iv": "bVuHTWAnAPrY1g3r"
+  },
+  "hint": "이 편지는 시험용입니다",
+  "ciphertext": "3h1wfXytKURZvco9vJJCs/QKpVv8wcoCGzo2nNIzoyIaJESAVoLFxz4D69Qr5TNPNMwrYXwtruFjbezyWyL/ag7dqxPlNOq8EsBrNYZgv3hH9azxSyKUyblLQoR1IFKrFP2hkrhC1ejFma863dsZGFHM3pxGnI9FSVVdq4vt0dTlAxw+9vzPmXZss3yurK/3dbwqjKlRd8FZ5Bc300ssy9becrkinIBDGyTKIynhRpKrs4MXqUyT7YcTQ3ck9rkGmosN9yycRQ+oeBLEiJoerPwc77iPokEFYlnqP6Bu4KEHiaegplbkxPRBT2JSpgQhqDwQgVMXgrTArxHZdeCJ9iv0GnwjhSEAWL3SkjKtiyDTi+nTxRbMWQq2SjKTNo4azWCETyYdqVpQ8qYaHUTTdWvBJRq/M2d/b8eAHHj3djeaYW4R0Nlou/TZS1Jf+l8Vst71SKgYzNqFUoOfiqBWNjUDN9L65Bn/nrrzZ4mGrGDbUv14V2d7R614aBvjhQCx2OeyIuBJTI2JWwDNOeFJ4MWNGYeTxrozsz6WmihZldehh3QjOdZrxGY93qEpX/IXq+BvL9781cPWvwLrtmr+OdZcCfaAdq361iFL9TKYc5T/RexZEbU7RTTGWrLdSakoJu7XEaO5a6B2kb4vSYyOaR97mKXWjopaQNBy2pXWPBOPKVPzWeMs4mG+SeycZIDdZOee8HhEUjMysk6kjNo8KOGV3qYzQxY/5UQpX1u84RSwmaQsXpkXUfq90UgqEnW8pFFvyKQnwh3Q3ndWTkaDUJraMNFM7QQUp4MEPE71orsZLzAyFWOkbpsyhUuXs2rZtEaxJB1vxgRjpMC72AdjvJHVxQcHpUKM7MaLWoqP+lkNvk9puKUGdAMzRJf708ryBjX4YO6CC1PqkCs6WYZ2FKGpeXdKp3lKqD+TXVmmUg1Bmn1QWVkEm33eHc0ja5xOZeBRKZn39DTYHpRu/OsaV8x8E75OODtp09Yk8E23qGAiMn40Ykgrp4qof3XV1EuJfjMRxXv+A1SDB7/DMgIhAu/8HVsuVCqAfd8pRjQg/LPpKJVbJ1eeotlmODB3h0IyYAqoiEqz85ZKY5Oev7eKjRRJ8/DCBM/Ku9NF9sLkvE77RheZoh8UWdbyC+vXKG4UAaWmlq8X76kcfqmnPcjI8cOKzp5X8T5vISNaos/UrFWTleVw0ZcO86U6lQnMSM1MgDbaT7S/0VfVXDwrFhAyGPc/ecqMDfIeNYQYZfl5qU317dsSokroehEOk7A6zVHrXt8n/JCSZa8ds5dl6vZ4e8y64Is2qJ4wrDEyevUsMoFbiFygv+ZsTsqpgUACd/x6LK+PmMGJPYdbmL/b"
+}
