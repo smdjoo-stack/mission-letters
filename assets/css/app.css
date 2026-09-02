@@ -274,6 +274,27 @@ textarea { resize: vertical; line-height: 1.8; }
 .block__caption { margin-top: 12px; font-size: 14px; }
 .blocks__add { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
 
+/* 사진 크기 고르기 (작성 화면) */
+.block__sizes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+/* hidden 속성이 display:flex 에 밀리지 않도록 */
+.block__sizes[hidden] { display: none; }
+.block__sizes-label { min-width: 62px; }
+.block__sizes-label { font-size: 13px; color: var(--ink-soft); margin-right: 6px; }
+.block__size {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 14px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.block__size:hover { border-color: var(--accent); color: var(--accent); }
+.block__size.is-on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
 /* ── 하단 고정 바 ─────────────────────────────────────────────── */
 .sticky-bar {
   position: sticky;
@@ -424,6 +445,8 @@ textarea { resize: vertical; line-height: 1.8; }
 .letter__body { font-size: 18px; line-height: 1.9; }
 .letter__text p { margin: 0 0 1.5em; }
 .letter__text p:last-child { margin-bottom: 0; }
+/* 문단 블록이 이어지면 문단 사이와 같은 숨을 준다 */
+.letter__text + .letter__text { margin-top: 1.5em; }
 
 /* 첫 문단 첫 글자 — 편지를 여는 신호 */
 .letter__body > .letter__text:first-child > p:first-child::first-letter {
@@ -462,6 +485,46 @@ textarea { resize: vertical; line-height: 1.8; }
   .letter__body > .letter__text:first-child > p:first-child::first-letter { font-size: 52px; }
 }
 
+/* ── 편지지 머리 — 로고·발행처 | 발행 기간 ────────────────────── */
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  margin-bottom: clamp(28px, 3.5vw, 40px);
+  border-bottom: 1px solid var(--line);
+}
+.masthead--bare { justify-content: flex-start; }
+.masthead__brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.masthead__logo {
+  height: 64px; width: auto; max-width: 200px;
+  object-fit: contain; display: block;
+}
+.masthead.is-failed .masthead__logo { display: none; }
+.masthead__org {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1.4;
+}
+.masthead__period {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .masthead { gap: 12px; }
+  .masthead__logo { height: 48px; }
+  .masthead__org { font-size: 17px; }
+}
+
 /* ── Hero — 첫 사진 위에 제목을 얹는다 ────────────────────────── */
 .letter__hero {
   position: relative;
@@ -483,6 +546,7 @@ textarea { resize: vertical; line-height: 1.8; }
 .letter__hero-text { position: relative; padding: clamp(28px, 4vw, 48px); }
 .letter--hero .letter__hero .letter__period { color: rgba(251,249,244,.82); }
 .letter--hero .letter__hero .letter__title  { color: #fbf9f4; margin-bottom: 12px; }
+.letter__head .letter__title { margin-top: 0; }
 .letter--hero .letter__hero .letter__author { color: rgba(251,249,244,.78); }
 
 /* 사진을 못 불러오면 히어로를 접고 보통 머리말처럼 보여준다 */
@@ -495,11 +559,34 @@ textarea { resize: vertical; line-height: 1.8; }
 .letter__hero.is-failed .letter__title  { color: var(--accent); }
 .letter__hero.is-failed .letter__author { color: var(--ink-soft); }
 
-/* ── 현장 리포트 — 사진을 좌·우로 번갈아 내어 서사를 만든다 ──── */
-@media (min-width: 1120px) {
-  .letter__figure--left  { margin-left:  -110px; }
-  .letter__figure--right { margin-right: -110px; }
+/* ── 한 줄에 여러 장 — 나란히 놓은 사진은 높이를 맞춘다 ────────── */
+.letter__row {
+  display: grid;
+  gap: clamp(10px, 1.6vw, 18px);
+  margin: clamp(36px, 5vw, 56px) 0;
+  align-items: start;
 }
+.letter__row--2 { grid-template-columns: repeat(2, 1fr); }
+.letter__row--3 { grid-template-columns: repeat(3, 1fr); }
+.letter__row .letter__figure { margin: 0; }
+.letter__figure--tile .letter__photo { aspect-ratio: 4 / 3; object-fit: cover; }
+.letter__row figcaption { font-size: 13px; margin-top: 10px; }
+@media (max-width: 560px) {
+  .letter__row { gap: 8px; }
+  .letter__row figcaption { font-size: 12px; margin-top: 7px; }
+}
+
+/* ── 사진 크기 — 편지를 쓸 때 사진마다 고른다 ─────────────────── */
+.letter__figure--small { max-width: 460px; margin-inline: auto; }
+.letter__figure--normal { /* 읽기 단 전체 — 기본값 */ }
+@media (min-width: 1120px) {
+  .letter__figure--wide { margin-inline: -110px; }
+}
+
+/* 히어로 높이 */
+.letter__hero--short  { min-height: min(42vh, 360px); }
+.letter__hero--normal { min-height: min(58vh, 520px); }
+.letter__hero--tall   { min-height: min(74vh, 680px); }
 
 /* ── 기도제목 — 번호와 얇은 선만 ──────────────────────────────── */
 .prayers {
@@ -573,6 +660,31 @@ textarea { resize: vertical; line-height: 1.8; }
 .support__row { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .support__row dt { font-size: 15px; color: var(--ink-soft); }
 .support__row dd { margin: 0; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ── 편지 맺음 서명 — 작은 원형 인물 사진 ─────────────────────── */
+.letter__signoff {
+  margin-top: clamp(48px, 6vw, 72px);
+  padding-top: clamp(28px, 3.5vw, 40px);
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.letter__signoff-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 14px;
+  background: var(--surface-container, #f2efe9);
+}
+.letter__signoff.is-failed .letter__signoff-photo { display: none; }
+.letter__signoff-name {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1.5;
+}
 
 /* ── 지난 편지 보관함 (후원자용) — 사진 없이 목록만 ───────────── */
 .archive__head { text-align: left; margin-bottom: clamp(28px, 4vw, 40px); }
@@ -690,6 +802,11 @@ body.is-locked {
   }
   .letter__head { border-bottom: 1pt solid #ccc; margin-bottom: 8mm; padding-bottom: 5mm; }
 
+  .masthead { padding-bottom: 3mm; margin-bottom: 6mm; border-bottom: 1pt solid #ccc; break-inside: avoid; }
+  .masthead__logo { height: 14mm; max-width: 60mm; }
+  .masthead__org { font-size: 12pt; color: #1a2b45; }
+  .masthead__period { font-size: 9pt; color: #555; }
+
   /* Hero 는 인쇄에서 사진 + 검은 글씨의 보통 머리말로 되돌린다 */
   .letter__hero { display: block; min-height: 0; background: none; border-radius: 0; overflow: visible;
     margin-bottom: 8mm; padding-bottom: 5mm; border-bottom: 1pt solid #ccc; break-inside: avoid; }
@@ -702,9 +819,18 @@ body.is-locked {
   .letter--hero .letter__hero .letter__author { color: #555; }
   .letter__hero.is-failed .letter__hero-photo { display: none; }
 
-  .letter__figure--left, .letter__figure--right { margin-left: 0; margin-right: 0; }
+  .letter__figure--wide { margin-inline: 0; }
+  .letter__figure--small .letter__photo { max-height: 70mm; }
+  .letter__row { margin: 6mm 0; gap: 3mm; break-inside: avoid; page-break-inside: avoid; }
+  .letter__figure--tile .letter__photo { max-height: 60mm; }
+  .letter__row figcaption { font-size: 8.5pt; margin-top: 1.5mm; }
+  .letter__hero--short  .letter__hero-photo { max-height: 70mm; }
+  .letter__hero--tall   .letter__hero-photo { max-height: 120mm; }
 
   .prayers, .support { margin-top: 8mm; padding-top: 4mm; border-top: 1pt solid #ccc; break-inside: avoid; }
+  .letter__signoff { margin-top: 8mm; padding-top: 4mm; border-top: 1pt solid #ccc; break-inside: avoid; }
+  .letter__signoff-photo { width: 20mm; height: 20mm; }
+  .letter__signoff-name { font-size: 10.5pt; color: #1a2b45; }
   .prayers__title, .support__title { font-size: 13pt; }
   .prayers__item { padding: 3mm 0; border-top: 1pt solid #ddd; }
   .prayers__name { font-size: 11.5pt; }

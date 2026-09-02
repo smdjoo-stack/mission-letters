@@ -6,6 +6,30 @@ import { loadDriveImage, driveViewUrl, SHARE_HELP } from './drive.js';
 
 const PRAYED_KEY = (id, i) => `missionletter.prayed.${id}.${i}`;
 
+/** 경로·URL 이면 그대로 싣고, 맨 파일 ID 면 드라이브에서 불러온다. */
+function imageTag(value, className, alt) {
+  const src = String(value || '').trim();
+  if (!src) return '';
+  return /[/.]/.test(src)
+    ? `<img class="${className}" src="${esc(src)}" alt="${esc(alt)}">`
+    : `<img class="${className}" data-drive-id="${esc(src)}" alt="${esc(alt)}" referrerpolicy="no-referrer">`;
+}
+
+const PHOTO_SIZES = ['small', 'normal', 'wide'];
+const PER_ROW = [1, 2, 3];
+
+/** 이 사진을 한 줄에 몇 장씩 놓을지 (기본 1장) */
+function perRowOf(block) {
+  const n = Number(block.perRow);
+  return PER_ROW.includes(n) ? n : 1;
+}
+const HERO_SIZES  = ['short', 'normal', 'tall'];
+
+function sizeClass(prefix, value, allowed) {
+  const size = allowed.includes(value) ? value : 'normal';
+  return `${prefix}--${size}`;
+}
+
 function figureHTML(block, extraClass = '') {
   return `
     <figure class="letter__figure ${extraClass}">
@@ -18,10 +42,30 @@ function figureHTML(block, extraClass = '') {
     </figure>`;
 }
 
-/** 머리말 — 첫 블록이 사진이면 그 사진 위에 얹는다(Hero). */
-function heroHTML(block, body, period) {
+/** 편지지 머리 — 로고와 발행처를 왼쪽, 발행 기간을 오른쪽에 둔 마스트헤드. */
+function mastheadHTML(body, period) {
+  const logo = String(body.logo || '').trim();
+  const org  = String(body.orgName || '').trim();
+  const hasBrand = Boolean(logo || org);
+  if (!hasBrand && !period) return '';
+
+  const logoTag = imageTag(logo, 'masthead__logo', org || '발행처 로고');
+
   return `
-    <header class="letter__hero">
+    <div class="masthead${hasBrand ? '' : ' masthead--bare'}">
+      ${hasBrand ? `
+        <div class="masthead__brand">
+          ${logoTag}
+          ${org ? `<span class="masthead__org">${esc(org)}</span>` : ''}
+        </div>` : ''}
+      ${period ? `<p class="masthead__period">${esc(period)}</p>` : ''}
+    </div>`;
+}
+
+/** 머리말 — 첫 블록이 사진이면 그 사진 위에 얹는다(Hero). */
+function heroHTML(block, body) {
+  return `
+    <header class="letter__hero ${sizeClass('letter__hero', block.size, HERO_SIZES)}">
       <a class="letter__hero-link" href="${esc(driveViewUrl(block.driveId))}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
         <img class="letter__hero-photo" data-drive-id="${esc(block.driveId)}"
              alt="" referrerpolicy="no-referrer">
@@ -29,17 +73,15 @@ function heroHTML(block, body, period) {
       <div class="letter__photo-fallback" hidden>${SHARE_HELP}</div>
       <div class="letter__hero-veil" aria-hidden="true"></div>
       <div class="letter__hero-text">
-        ${period ? `<p class="letter__period">${esc(period)}</p>` : ''}
         <h1 class="letter__title">${esc(body.title || '선교편지')}</h1>
         ${body.authorName ? `<p class="letter__author">${esc(body.authorName)}</p>` : ''}
       </div>
     </header>`;
 }
 
-function plainHeadHTML(body, period) {
+function plainHeadHTML(body) {
   return `
     <header class="letter__head">
-      ${period ? `<p class="letter__period">${esc(period)}</p>` : ''}
       <h1 class="letter__title">${esc(body.title || '선교편지')}</h1>
       ${body.authorName ? `<p class="letter__author">${esc(body.authorName)}</p>` : ''}
     </header>`;
@@ -87,6 +129,17 @@ function supportHTML(support) {
     </section>`;
 }
 
+function signoffHTML(body) {
+  const photo = imageTag(body.portrait, 'letter__signoff-photo', body.authorName || '보내는 이');
+  const name = String(body.authorName || '').trim();
+  if (!photo && !name) return '';
+  return `
+    <div class="letter__signoff">
+      ${photo}
+      ${name ? `<p class="letter__signoff-name">${esc(name)}</p>` : ''}
+    </div>`;
+}
+
 /** 편지 한 통을 HTML 로. 사진은 자리만 잡고 loadLetterImages() 에서 실제로 싣는다. */
 export function letterHTML(body, meta = {}) {
   const period = body.period || periodLabel(meta.id);
@@ -96,28 +149,52 @@ export function letterHTML(body, meta = {}) {
   const hero = all[0]?.type === 'image' && all[0].driveId ? all[0] : null;
   const rest = hero ? all.slice(1) : all;
 
-  // 남은 사진은 좌·우로 번갈아 놓아 사역의 서사를 만든다(넓은 화면에서만).
-  let photoIndex = 0;
-  const blocks = rest.map(block => {
+  // 연달아 놓인 사진 중 '한 줄에 몇 장'이 같은 것끼리 묶어 한 줄로 만든다.
+  const parts = [];
+  let i = 0;
+  while (i < rest.length) {
+    const block = rest[i];
+
     if (block.type === 'image' && block.driveId) {
-      const side = photoIndex++ % 2 === 0 ? 'letter__figure--left' : 'letter__figure--right';
-      return figureHTML(block, side);
+      const per = perRowOf(block);
+      const run = [];
+      while (i < rest.length
+             && rest[i].type === 'image' && rest[i].driveId
+             && perRowOf(rest[i]) === per) {
+        run.push(rest[i]);
+        i++;
+      }
+      if (per === 1) {
+        run.forEach(photo => parts.push(figureHTML(photo, sizeClass('letter__figure', photo.size, PHOTO_SIZES))));
+      } else {
+        for (let k = 0; k < run.length; k += per) {
+          const chunk = run.slice(k, k + per);
+          parts.push(`<div class="letter__row letter__row--${per}">${
+            chunk.map(photo => figureHTML(photo, 'letter__figure--tile')).join('')
+          }</div>`);
+        }
+      }
+      continue;
     }
+
     if (block.type === 'text' && String(block.value || '').trim()) {
-      return `<div class="letter__text">${paragraphs(block.value)}</div>`;
+      parts.push(`<div class="letter__text">${paragraphs(block.value)}</div>`);
     }
-    return '';
-  }).join('');
+    i++;
+  }
+  const blocks = parts.join('');
 
   return `
     <article class="letter${hero ? ' letter--hero' : ''}">
-      ${hero ? heroHTML(hero, body, period) : plainHeadHTML(body, period)}
+      ${mastheadHTML(body, period)}
+      ${hero ? heroHTML(hero, body) : plainHeadHTML(body)}
       <div class="letter__sheet">
         ${body.greeting ? `<p class="letter__greeting">${esc(body.greeting)}</p>` : ''}
         <div class="letter__body">${blocks}</div>
         ${body.closing ? `<div class="letter__closing">${paragraphs(body.closing)}</div>` : ''}
         ${prayersHTML(body.prayers, meta.id)}
         ${supportHTML(body.support)}
+        ${signoffHTML(body)}
       </div>
     </article>`;
 }
@@ -154,7 +231,7 @@ export async function loadLetterImages(root) {
   const results = await Promise.all(images.map(async img => {
     const result = await loadDriveImage(img, img.dataset.driveId);
     if (!result.ok) {
-      const holder = img.closest('.letter__figure, .letter__hero');
+      const holder = img.closest('.letter__figure, .letter__hero, .masthead, .letter__signoff');
       holder?.classList.add('is-failed');
       const fallback = holder?.querySelector('.letter__photo-fallback');
       if (fallback) fallback.hidden = false;

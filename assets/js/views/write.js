@@ -64,6 +64,11 @@ export async function renderWrite(root, editId) {
   // 옛 임시저장에는 없던 항목 — 없으면 만들어 둔다.
   if (!Array.isArray(state.body.prayers)) state.body.prayers = [];
   if (!state.body.support) state.body.support = { note: '', bank: '', account: '', holder: '' };
+  if (!state.isEdit) {
+    if (!state.body.orgName) state.body.orgName = settings.orgName || '';
+    if (!state.body.logo) state.body.logo = settings.logo || '';
+    if (!state.body.portrait) state.body.portrait = settings.portrait || '';
+  }
   // 새 편지는 설정에 적어 둔 후원 안내로 시작한다.
   const sup = state.body.support;
   if (!state.isEdit && !sup.note && !sup.bank && !sup.account && !sup.holder) {
@@ -110,6 +115,23 @@ function paint(root) {
             <input id="greeting" type="text" value="${esc(state.body.greeting)}" placeholder="사랑하는 후원자님께">
           </label>
         </div>
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">발행처 (선택)</span>
+            <input id="orgName" type="text" value="${esc(state.body.orgName || '')}" placeholder="한샘교회 선교부">
+            <span class="field__hint">로고 옆에 함께 나옵니다.</span>
+          </label>
+          <label class="field">
+            <span class="field__label">로고 (선택)</span>
+            <input id="logoLink" type="text" value="${esc(state.body.logo || '')}" placeholder="assets/img/logo.png" autocapitalize="none" spellcheck="false">
+            <span class="field__hint" id="logo-hint"></span>
+          </label>
+        </div>
+        <label class="field">
+          <span class="field__label">맺음 사진 (선택)</span>
+          <input id="portraitLink" type="text" value="${esc(state.body.portrait || '')}" placeholder="assets/img/portrait.png" autocapitalize="none" spellcheck="false">
+          <span class="field__hint">편지 맨 끝에 보내는 이 이름과 함께 작은 원형으로 나옵니다.</span>
+        </label>
       </section>
 
       <section class="card">
@@ -238,6 +260,35 @@ function bindFields(root) {
     const input = $('#' + id, root);
     input.oninput = () => { state.body.support[key] = input.value; persist(root); };
   }
+  const org = $('#orgName', root);
+  org.oninput = () => { state.body.orgName = org.value; persist(root); };
+
+  const logo = $('#logoLink', root);
+  const logoHint = $('#logo-hint', root);
+  const readLogo = () => {
+    const raw = logo.value.trim();
+    if (!raw) { state.body.logo = ''; logoHint.textContent = '비워 두면 로고 없이 나옵니다.'; return; }
+    const driveId = extractDriveId(raw);
+    if (driveId) {
+      state.body.logo = driveId;
+      logoHint.textContent = '드라이브 파일입니다. “링크가 있는 모든 사용자”로 공유해 주세요.';
+      return;
+    }
+    state.body.logo = raw;                       // 저장소 안의 경로나 주소는 그대로 쓴다
+    logoHint.textContent = /[/.]/.test(raw)
+      ? '저장소에 넣어 둔 그림을 씁니다.'
+      : '경로나 드라이브 링크로 적어 주세요.';
+  };
+  logo.oninput = () => { readLogo(); persist(root); };
+  readLogo();
+
+  const portrait = $('#portraitLink', root);
+  portrait.oninput = () => {
+    const raw = portrait.value.trim();
+    state.body.portrait = extractDriveId(raw) || raw;
+    persist(root);
+  };
+
   $('#password', root).oninput = e => { state.password = e.target.value; persist(root); };
   $('#hint', root).oninput = e => { state.hint = e.target.value; persist(root); };
 }
@@ -288,6 +339,39 @@ function paintPrayers(root) {
   });
 }
 
+// ── 사진 크기 ──────────────────────────────────────────────────────
+// 첫 사진은 머리 이미지(Hero)라 높이를, 나머지는 폭을 고른다.
+const HERO_SIZES  = [['short', '낮게'], ['normal', '보통'], ['tall', '높게']];
+const PHOTO_SIZES = [['small', '작게'], ['normal', '보통'], ['wide', '크게']];
+
+const PER_ROW = [[1, '1장'], [2, '2장'], [3, '3장']];
+
+function sizePickerHTML(index, block) {
+  const isHero = index === 0;
+  const options = isHero ? HERO_SIZES : PHOTO_SIZES;
+  const current = options.some(([v]) => v === block.size) ? block.size : 'normal';
+  const per = PER_ROW.some(([v]) => v === Number(block.perRow)) ? Number(block.perRow) : 1;
+
+  const sizeRow = `
+    <div class="block__sizes"${isHero || per === 1 ? '' : ' hidden'} data-role="size-row">
+      <span class="block__sizes-label">${isHero ? '머리 사진 높이' : '사진 크기'}</span>
+      ${options.map(([value, label]) => `
+        <button type="button" class="block__size${value === current ? ' is-on' : ''}"
+                data-size="${value}" data-i="${index}">${label}</button>`).join('')}
+    </div>`;
+
+  if (isHero) return sizeRow;   // 머리 사진은 언제나 혼자다
+
+  return `
+    <div class="block__sizes">
+      <span class="block__sizes-label">한 줄에</span>
+      ${PER_ROW.map(([value, label]) => `
+        <button type="button" class="block__size${value === per ? ' is-on' : ''}"
+                data-per="${value}" data-i="${index}">${label}</button>`).join('')}
+    </div>
+    ${sizeRow}`;
+}
+
 // ── 블록 편집기 ────────────────────────────────────────────────────
 // 구조 변경(추가·삭제·이동) 때만 다시 그린다. 타이핑 중에는 다시 그리지 않아 포커스가 유지된다.
 function paintBlocks(root) {
@@ -308,6 +392,7 @@ function paintBlocks(root) {
             <img data-drive-id="${esc(block.driveId || '')}" alt="" referrerpolicy="no-referrer">
             <div class="block__photo-fail" hidden>${SHARE_HELP}</div>
           </div>
+          ${sizePickerHTML(index, block)}
           <input class="block__caption" data-i="${index}" type="text"
                  value="${esc(block.caption || '')}" placeholder="사진 설명 (선택)">
         </div>`;
@@ -335,6 +420,27 @@ function paintBlocks(root) {
       }
     };
     autoGrow(area);
+  });
+
+  $$('.block__size', wrap).forEach(button => {
+    button.onclick = () => {
+      const i = Number(button.dataset.i);
+      const block = state.body.blocks[i];
+      const holder = button.parentElement;
+
+      if (button.dataset.per) {
+        block.perRow = Number(button.dataset.per);
+        // 한 줄에 여러 장이면 폭은 칸이 정하므로 크기 고르기를 감춘다.
+        const sizeRow = holder.parentElement.querySelector('[data-role=size-row]');
+        if (sizeRow) sizeRow.hidden = block.perRow !== 1;
+      } else {
+        block.size = button.dataset.size;
+      }
+
+      holder.querySelectorAll('.block__size')
+        .forEach(other => other.classList.toggle('is-on', other === button));
+      persist(root);
+    };
   });
 
   $$('.block__caption', wrap).forEach(input => {

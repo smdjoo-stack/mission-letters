@@ -1,6 +1,7 @@
 // 설정 화면 — PRD v2 §7.4
 import { $, esc, toast } from '../util.js';
 import { getSettings, saveSettings } from '../store.js';
+import { extractDriveId } from '../drive.js';
 import { navigate } from '../router.js';
 
 export function renderSettings(root) {
@@ -17,6 +18,22 @@ export function renderSettings(root) {
             <span class="field__label">이름</span>
             <input name="missionaryName" type="text" value="${esc(s.missionaryName)}" placeholder="홍길동 선교사" autocomplete="name">
             <span class="field__hint">편지 머리말에 표시됩니다.</span>
+          </label>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">발행처 (선택)</span>
+              <input name="orgName" type="text" value="${esc(s.orgName || '')}" placeholder="한샘교회 선교부">
+            </label>
+            <label class="field">
+              <span class="field__label">로고 (선택)</span>
+              <input name="logo" type="text" value="${esc(s.logo || '')}" placeholder="assets/img/logo.png" autocapitalize="none" spellcheck="false">
+              <span class="field__hint">새 편지에 자동으로 채워집니다.</span>
+            </label>
+          </div>
+          <label class="field">
+            <span class="field__label">맺음 사진 (선택)</span>
+            <input name="portrait" type="text" value="${esc(s.portrait || '')}" placeholder="assets/img/portrait.png" autocapitalize="none" spellcheck="false">
+            <span class="field__hint">편지 맨 끝에 이름과 함께 작은 원형으로 나옵니다.</span>
           </label>
         </section>
 
@@ -104,6 +121,9 @@ export function renderSettings(root) {
 function readForm(form) {
   return {
     missionaryName: form.missionaryName.value.trim(),
+    orgName: form.orgName.value.trim(),
+    logo: (extractDriveId(form.logo.value) || form.logo.value.trim()),
+    portrait: (extractDriveId(form.portrait.value) || form.portrait.value.trim()),
     repoOwner: form.repoOwner.value.trim().replace(/^@/, ''),
     repoName: form.repoName.value.trim(),
     repoBranch: form.repoBranch.value.trim() || 'main',
