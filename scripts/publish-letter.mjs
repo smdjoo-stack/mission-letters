@@ -2,8 +2,11 @@
 // 브라우저 없이 편지를 암호화해서 letters/ 에 직접 발행하는 도구.
 // assets/js/crypto.js 의 PBKDF2-SHA256(210,000회) + AES-256-GCM 방식을 그대로 재현한다.
 //
+// 암호화해서 letters/ 에 쓰고, 이어서 커밋·푸시까지 한다 — 명령 한 줄로 발행이 끝난다.
+//
 // 사용법:
 //   node scripts/publish-letter.mjs <편지-내용.json>
+//   node scripts/publish-letter.mjs <편지-내용.json> --no-push    # 파일만 쓰고 멈춘다
 //
 // 입력 JSON 형식:
 // {
@@ -27,6 +30,7 @@
 // }
 
 import { randomBytes, pbkdf2Sync, createCipheriv } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -121,7 +125,48 @@ async function main() {
   const nextIndex = upsertIndexEntry(index, { id, publishedAt: published, updatedAt: now });
   await writeFile(INDEX_PATH, JSON.stringify(nextIndex, null, 2) + '\n', 'utf8');
 
-  console.log(`발행 완료: letters/${id}.json`);
+  console.log(`암호화 완료: letters/${id}.json`);
+
+  if (process.argv.includes('--no-push')) {
+    console.log('--no-push 라서 여기서 멈춥니다. 직접 커밋·푸시해 주세요.');
+    return;
+  }
+
+  publish(id, Boolean(existing));
+}
+
+/** letters/ 만 커밋해서 푸시한다 — 작업 중이던 다른 파일은 건드리지 않는다. */
+function publish(id, isUpdate) {
+  const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
+
+  try {
+    git('rev-parse', '--is-inside-work-tree');
+  } catch {
+    console.error('git 저장소가 아닙니다. 파일만 써 두었으니 직접 올려 주세요.');
+    return;
+  }
+
+  // 방금 쓴 두 파일만 담는다. letters/ 를 통째로 담으면 그 안에 실수로 둔
+  // 배포 파일(비밀번호가 평문으로 들어 있다) 까지 공개 저장소로 올라간다.
+  git('add', '--', `letters/${id}.json`, 'letters/index.json');
+  const staged = git('diff', '--cached', '--name-only').trim();
+  if (!staged) {
+    console.log('바뀐 내용이 없습니다. 이미 같은 내용으로 발행돼 있습니다.');
+    return;
+  }
+
+  git('commit', '-m', `${isUpdate ? '편지 수정' : '편지 발행'}: ${id}`);
+  console.log(`커밋: ${staged.split('\n').join(', ')}`);
+
+  try {
+    git('push');
+  } catch (err) {
+    console.error('푸시하지 못했습니다. 커밋은 남아 있으니 `git push` 만 다시 해 주세요.');
+    console.error(String(err.stderr || err.message).trim());
+    process.exit(1);
+  }
+
+  console.log('푸시 완료 — GitHub Pages 반영에 최대 1분이 걸릴 수 있습니다.');
 }
 
 main().catch(err => {

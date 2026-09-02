@@ -44,7 +44,7 @@ async function request(path, { method = 'GET', body, raw } = {}) {
   return raw ? res : res.json();
 }
 
-/** 브라우저에서의 쓰기는 더 이상 지원하지 않는다 — scripts/publish-letter.mjs 로 발행한다. */
+/** 브라우저에서의 쓰기는 지원하지 않는다 — scripts/publish-letter.mjs 로 발행한다. */
 export function writeBlocked() {
   return new GitHubError(
     '브라우저에서 바로 발행하는 기능은 꺼져 있습니다. ' +

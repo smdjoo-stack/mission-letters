@@ -49,9 +49,11 @@ Branch 를 **main / (root)** 로 두고 저장합니다.
 4. **발행** → 저장소에서 아래 명령을 돌립니다.
 
 ```bash
-node scripts/publish-letter.mjs <편지-내용.json>
-git add letters && git commit -m "편지 발행: 2026-12" && git push
+node scripts/publish-letter.mjs ~/Downloads/letter-2026-12.json
 ```
+
+이 한 줄이 암호화 → `letters/` 기록 → 커밋 → 푸시까지 합니다.
+파일만 써 두고 직접 올리고 싶으면 뒤에 `--no-push` 를 붙입니다.
 
 5. 후원자에게 **링크와 비밀번호**를 함께 보냅니다.
 

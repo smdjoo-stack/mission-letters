@@ -64,6 +64,20 @@ export async function renderWrite(root, editId) {
   // 옛 임시저장에는 없던 항목 — 없으면 만들어 둔다.
   if (!Array.isArray(state.body.prayers)) state.body.prayers = [];
   if (!state.body.support) state.body.support = { note: '', bank: '', account: '', holder: '' };
+  // 예전에는 본문 첫 사진이 머리글 사진이었다 — 전용 칸으로 옮겨 준다.
+  if (!String(state.body.hero || '').trim()) {
+    const first = state.body.blocks?.[0];
+    if (first && first.type === 'image' && first.driveId) {
+      state.body.hero = first.driveId;
+      state.body.heroSize = first.size || 'normal';
+      state.body.blocks.shift();
+      if (!state.body.blocks.length) state.body.blocks.push({ type: 'text', value: '' });
+      // 옮긴 결과를 바로 저장한다 — 여기서 미루면 본문에서만 빠진 채로 남는다.
+      saveDraft(state.id, { body: state.body, password: state.password, hint: state.hint });
+    }
+  }
+  if (!state.body.heroSize) state.body.heroSize = 'normal';
+
   if (!state.isEdit) {
     if (!state.body.orgName) state.body.orgName = settings.orgName || '';
     if (!state.body.logo) state.body.logo = settings.logo || '';
@@ -127,6 +141,24 @@ function paint(root) {
             <span class="field__hint" id="logo-hint"></span>
           </label>
         </div>
+        <div class="field">
+          <span class="field__label">머리글 사진 (선택)</span>
+          <input id="heroLink" type="text" value="${esc(state.body.hero || '')}" placeholder="구글 드라이브 공유 링크" autocapitalize="none" spellcheck="false">
+          <span class="field__hint" id="hero-hint">편지 맨 위에 크게 깔리고 그 위에 제목이 얹힙니다.</span>
+          <div class="hero-pick" id="hero-pick"${state.body.hero ? '' : ' hidden'}>
+            <div class="hero-pick__photo">
+              <img id="hero-photo" alt="" referrerpolicy="no-referrer">
+              <div class="hero-pick__fail" id="hero-fail" hidden>${SHARE_HELP}</div>
+            </div>
+            <div class="block__sizes">
+              <span class="block__sizes-label">높이</span>
+              ${[['short', '낮게'], ['normal', '보통'], ['tall', '높게']].map(([value, label]) => `
+                <button type="button" class="block__size${(state.body.heroSize || 'normal') === value ? ' is-on' : ''}"
+                        data-hero-size="${value}">${label}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+
         <label class="field">
           <span class="field__label">맺음 사진 (선택)</span>
           <input id="portraitLink" type="text" value="${esc(state.body.portrait || '')}" placeholder="assets/img/portrait.png" autocapitalize="none" spellcheck="false">
@@ -282,6 +314,44 @@ function bindFields(root) {
   logo.oninput = () => { readLogo(); persist(root); };
   readLogo();
 
+  const heroInput = $('#heroLink', root);
+  const heroPick = $('#hero-pick', root);
+  const heroPhoto = $('#hero-photo', root);
+  const heroFail = $('#hero-fail', root);
+  const heroHint = $('#hero-hint', root);
+
+  const paintHero = async () => {
+    const value = String(state.body.hero || '').trim();
+    heroPick.hidden = !value;
+    if (!value) { heroHint.textContent = '비우면 제목만 있는 머리말로 나옵니다.'; return; }
+    heroFail.hidden = true;
+    if (/[/.]/.test(value) && !extractDriveId(value)) {
+      heroPhoto.src = value;                      // 저장소 안의 그림
+      heroHint.textContent = '저장소에 넣어 둔 그림을 씁니다.';
+      return;
+    }
+    heroHint.textContent = '구글 드라이브 사진입니다.';
+    const result = await loadDriveImage(heroPhoto, value, 800);
+    if (!result.ok) heroFail.hidden = false;
+  };
+
+  heroInput.oninput = () => {
+    const raw = heroInput.value.trim();
+    state.body.hero = extractDriveId(raw) || raw;
+    persist(root);
+    paintHero();
+  };
+  paintHero();
+
+  $$('[data-hero-size]', root).forEach(button => {
+    button.onclick = () => {
+      state.body.heroSize = button.dataset.heroSize;
+      button.parentElement.querySelectorAll('.block__size')
+        .forEach(other => other.classList.toggle('is-on', other === button));
+      persist(root);
+    };
+  });
+
   const portrait = $('#portraitLink', root);
   portrait.oninput = () => {
     const raw = portrait.value.trim();
@@ -340,27 +410,22 @@ function paintPrayers(root) {
 }
 
 // ── 사진 크기 ──────────────────────────────────────────────────────
-// 첫 사진은 머리 이미지(Hero)라 높이를, 나머지는 폭을 고른다.
-const HERO_SIZES  = [['short', '낮게'], ['normal', '보통'], ['tall', '높게']];
 const PHOTO_SIZES = [['small', '작게'], ['normal', '보통'], ['wide', '크게']];
 
 const PER_ROW = [[1, '1장'], [2, '2장'], [3, '3장']];
 
 function sizePickerHTML(index, block) {
-  const isHero = index === 0;
-  const options = isHero ? HERO_SIZES : PHOTO_SIZES;
+  const options = PHOTO_SIZES;
   const current = options.some(([v]) => v === block.size) ? block.size : 'normal';
   const per = PER_ROW.some(([v]) => v === Number(block.perRow)) ? Number(block.perRow) : 1;
 
   const sizeRow = `
-    <div class="block__sizes"${isHero || per === 1 ? '' : ' hidden'} data-role="size-row">
-      <span class="block__sizes-label">${isHero ? '머리 사진 높이' : '사진 크기'}</span>
+    <div class="block__sizes"${per === 1 ? '' : ' hidden'} data-role="size-row">
+      <span class="block__sizes-label">사진 크기</span>
       ${options.map(([value, label]) => `
         <button type="button" class="block__size${value === current ? ' is-on' : ''}"
                 data-size="${value}" data-i="${index}">${label}</button>`).join('')}
     </div>`;
-
-  if (isHero) return sizeRow;   // 머리 사진은 언제나 혼자다
 
   return `
     <div class="block__sizes">
@@ -497,78 +562,167 @@ function updatePhotoCount(root) {
 }
 
 // ── 사진 추가 대화상자 — 붙여넣는 즉시 검증 (PRD §6.2 3단계) ─────────
+let lastPerRow = 1;   // 지난번에 고른 장수를 다음에도 기본값으로 쓴다
+
+/**
+ * 사진 추가 — 고른 장수만큼 링크·설명 칸을 만들어 한 줄을 한 번에 넣는다.
+ * 1장이면 한 쌍, 2장이면 두 쌍, 3장이면 세 쌍.
+ */
 async function addPhoto(root) {
-  let verifiedId = null;
+  let perRow = lastPerRow;
+  const picked = [];                      // 확인을 마친 { id, caption }
+
+  const slotHTML = (i, count) => `
+    <div class="photo-slot" data-slot="${i}">
+      ${count > 1 ? `<span class="photo-slot__no">${i + 1}번째 사진</span>` : ''}
+      <label class="field">
+        <span class="field__label">공유 링크</span>
+        <input class="slot-link" data-i="${i}" type="text"
+               placeholder="https://drive.google.com/file/d/..." autocapitalize="none" spellcheck="false">
+      </label>
+      <div class="photo-check slot-check" data-i="${i}"></div>
+      <label class="field">
+        <span class="field__label">사진 설명 (선택)</span>
+        <input class="slot-caption" data-i="${i}" type="text" placeholder="주일학교 아이들">
+      </label>
+    </div>`;
 
   const ok = await dialog({
     title: '사진 추가',
     confirmLabel: '이 사진 넣기',
     content: `
       <p class="dialog__lead">구글 드라이브에서 사진의 <strong>공유 링크</strong>를 복사해 붙여넣어 주세요.</p>
-      <label class="field">
-        <span class="field__label">공유 링크</span>
-        <input id="drive-input" type="text" placeholder="https://drive.google.com/file/d/..." autocapitalize="none" spellcheck="false">
-      </label>
-      <div class="photo-check" id="photo-check"></div>
-      <label class="field">
-        <span class="field__label">사진 설명 (선택)</span>
-        <input id="drive-caption" type="text" placeholder="주일학교 아이들">
-      </label>
+      <div class="field">
+        <span class="field__label">한 줄에 몇 장</span>
+        <div class="block__sizes" id="add-per-row">
+          ${[[1, '1장'], [2, '2장'], [3, '3장']].map(([value, label]) => `
+            <button type="button" class="block__size${value === perRow ? ' is-on' : ''}" data-add-per="${value}">${label}</button>`).join('')}
+        </div>
+      </div>
+      <div id="photo-slots"></div>
       <div class="callout callout--warn">
         드라이브에서 <strong>공유 → ‘링크가 있는 모든 사용자’</strong> 로 설정해야 후원자에게 보입니다.
         선교사님은 로그인 상태라 설정이 잘못돼도 화면에는 보일 수 있습니다.
       </div>`,
     onMount: {
       mount(box) {
-        const input = box.querySelector('#drive-input');
-        const check = box.querySelector('#photo-check');
-        input.focus();
+        const slots = box.querySelector('#photo-slots');
+        const slotState = [];             // 칸마다 { id, url, caption }
 
-        const run = async () => {
-          const driveId = extractDriveId(input.value);
-          verifiedId = null;
-          if (!input.value.trim()) { check.className = 'photo-check'; check.innerHTML = ''; return; }
+        const verify = async index => {
+          const input = slots.querySelector(`.slot-link[data-i="${index}"]`);
+          const check = slots.querySelector(`.slot-check[data-i="${index}"]`);
+          const value = input.value.trim();
+          slotState[index] = { ...(slotState[index] || {}), url: value, id: null };
+
+          if (!value) { check.className = 'photo-check slot-check'; check.dataset.i = index; check.innerHTML = ''; return; }
+
+          const driveId = extractDriveId(value);
           if (!driveId) {
-            check.className = 'photo-check is-bad';
+            check.className = 'photo-check slot-check is-bad';
             check.innerHTML = '구글 드라이브 링크가 아닙니다. 드라이브에서 <strong>공유 → 링크 복사</strong>로 받은 주소를 넣어 주세요.';
             return;
           }
-          check.className = 'photo-check is-busy';
+          check.className = 'photo-check slot-check is-busy';
           check.textContent = '사진을 확인하는 중…';
           const result = await verifyDriveImage(driveId);
           if (result.ok) {
-            verifiedId = driveId;
-            check.className = 'photo-check is-good';
+            slotState[index].id = driveId;
+            check.className = 'photo-check slot-check is-good';
             check.innerHTML = `<img src="${esc(result.url)}" alt="미리보기"><span>사진을 확인했습니다.</span>`;
           } else {
-            check.className = 'photo-check is-bad';
+            check.className = 'photo-check slot-check is-bad';
             check.innerHTML = SHARE_HELP;
           }
         };
 
-        let timer = null;
-        input.oninput = () => { clearTimeout(timer); timer = setTimeout(run, 400); };
-        input.onpaste = () => setTimeout(run, 0);
+        const bind = () => {
+          slots.querySelectorAll('.slot-link').forEach(input => {
+            const index = Number(input.dataset.i);
+            let timer = null;
+            input.oninput = () => { clearTimeout(timer); timer = setTimeout(() => verify(index), 400); };
+            input.onpaste = () => setTimeout(() => verify(index), 0);
+          });
+          slots.querySelectorAll('.slot-caption').forEach(input => {
+            const index = Number(input.dataset.i);
+            input.oninput = () => { slotState[index] = { ...(slotState[index] || {}), caption: input.value }; };
+          });
+        };
+
+        const render = () => {
+          slots.innerHTML = Array.from({ length: perRow }, (_, i) => slotHTML(i, perRow)).join('');
+          // 장수를 바꿔도 이미 적은 값은 남긴다.
+          slotState.slice(0, perRow).forEach((slot, i) => {
+            if (!slot) return;
+            const link = slots.querySelector(`.slot-link[data-i="${i}"]`);
+            const caption = slots.querySelector(`.slot-caption[data-i="${i}"]`);
+            if (link && slot.url) link.value = slot.url;
+            if (caption && slot.caption) caption.value = slot.caption;
+          });
+          bind();
+          slotState.slice(0, perRow).forEach((slot, i) => { if (slot?.url) verify(i); });
+          slots.querySelector('.slot-link')?.focus();
+        };
+
+        box.querySelectorAll('[data-add-per]').forEach(button => {
+          button.onclick = () => {
+            perRow = Number(button.dataset.addPer);
+            box.querySelectorAll('[data-add-per]')
+              .forEach(other => other.classList.toggle('is-on', other === button));
+            render();
+          };
+        });
+
+        render();
+        box._slotState = slotState;
       },
       validate(box) {
-        if (verifiedId) return true;
-        const check = box.querySelector('#photo-check');
-        check.className = 'photo-check is-bad';
-        check.innerHTML = check.innerHTML || '먼저 사진 링크를 확인해 주세요.';
+        const slotState = box._slotState || [];
+        picked.length = 0;
+        for (let i = 0; i < perRow; i++) {
+          const slot = slotState[i];
+          if (!slot || !slot.url) continue;            // 비워 둔 칸은 건너뛴다
+          if (!slot.id) {                              // 적었는데 확인이 안 된 칸
+            const check = box.querySelector(`.slot-check[data-i="${i}"]`);
+            if (check) {
+              check.className = 'photo-check slot-check is-bad';
+              check.innerHTML = check.innerHTML || '이 사진의 링크를 확인해 주세요.';
+            }
+            return false;
+          }
+          picked.push({ id: slot.id, caption: slot.caption || '' });
+        }
+        if (picked.length) return true;
+        const first = box.querySelector('.slot-check[data-i="0"]');
+        if (first) {
+          first.className = 'photo-check slot-check is-bad';
+          first.innerHTML = '먼저 사진 링크를 넣어 주세요.';
+        }
         return false;
       }
     }
   });
 
-  if (!ok || !verifiedId) return;
-  const caption = document.querySelector('#drive-caption')?.value || '';
-  state.body.blocks.push({ type: 'image', driveId: verifiedId, caption });
-  state.body.blocks.push({ type: 'text', value: '' });
+  if (!ok || !picked.length) return;
+  lastPerRow = perRow;
+
+  const blocks = state.body.blocks;
+  // 여러 장을 한 줄로 묶으려면 앞 사진과 붙어 있어야 한다 — 사이의 빈 글 칸을 걷어낸다.
+  if (perRow > 1) {
+    const last = blocks[blocks.length - 1];
+    if (last && last.type === 'text' && !String(last.value || '').trim()) blocks.pop();
+  }
+  picked.forEach(photo => blocks.push({ type: 'image', driveId: photo.id, caption: photo.caption, perRow }));
+  if (perRow === 1) blocks.push({ type: 'text', value: '' });
+
   persist(root);
   paintBlocks(root);
   updatePhotoCount(root);
-  toast('사진을 넣었습니다.', 'good');
+  toast(picked.length === 1 && perRow === 1
+    ? '사진을 넣었습니다.'
+    : `사진 ${picked.length}장을 넣었습니다. 한 줄에 ${perRow}장으로 놓입니다.`, 'good');
 }
+
 
 // ── 미리보기 ────────────────────────────────────────────────────────
 function preview() {
@@ -665,6 +819,10 @@ async function deploy(root) {
 
   const button = $('#deploy-btn', root);
   const status = $('#save-status', root);
+  const restore = () => {
+    button.disabled = false;
+    button.textContent = state.isEdit ? '수정 배포' : '배포';
+  };
   button.disabled = true;
   button.textContent = '내려받는 중…';
   status.textContent = '';
@@ -674,16 +832,13 @@ async function deploy(root) {
     downloadJSON(name, deployPayload());
     // 임시저장은 지우지 않는다 — 아직 발행 전이라 이 화면이 유일한 원본이다.
     status.textContent = '배포 파일을 내려받았습니다.';
-    // 안내 창을 띄우기 전에 버튼을 되돌린다 — 창이 열려 있는 동안 '내려받는 중…'으로 남지 않게.
-    button.disabled = false;
-    button.textContent = state.isEdit ? '수정 배포' : '배포';
+    restore();
     await showDeployed(name);
   } catch (err) {
     status.textContent = '파일을 내려받지 못했습니다. 작성 내용은 그대로 남아 있습니다.';
     toast(err.message, 'bad');
   } finally {
-    button.disabled = false;
-    button.textContent = state.isEdit ? '수정 배포' : '배포';
+    restore();
   }
 }
 
@@ -695,7 +850,7 @@ async function showDeployed(fileName) {
     confirmLabel: '명령 복사하고 닫기',
     cancelLabel: '닫기',
     content: `
-      <p class="dialog__lead">아직 후원자에게 공개되지 않았습니다. 저장소에서 아래 명령을 실행하고 push 하면 공개됩니다.</p>
+      <p class="dialog__lead">아직 후원자에게 공개되지 않았습니다. 저장소에서 아래 명령 한 줄을 실행하면 암호화·커밋·푸시까지 끝납니다.</p>
       <div class="share">
         <div class="share__row"><span>파일</span><code>${esc(fileName)}</code></div>
         <div class="share__row"><span>명령</span><code>${esc(command)}</code></div>

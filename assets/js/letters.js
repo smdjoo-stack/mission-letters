@@ -16,6 +16,8 @@ export function emptyBody(missionaryName = '') {
     orgName: '',
     logo: '',
     portrait: '',
+    hero: '',                                      // 머리글 사진 (드라이브 링크 또는 저장소 경로)
+    heroSize: 'normal',                            // short | normal | tall
     greeting: '사랑하는 후원자님께',
     blocks: [{ type: 'text', value: '' }],
     closing: '',
@@ -115,5 +117,6 @@ export async function removeLetter(id) {
 
 /** 본문에 들어 있는 사진 수 */
 export function countPhotos(body) {
-  return (body?.blocks || []).filter(b => b.type === 'image' && b.driveId).length;
+  const inBody = (body?.blocks || []).filter(b => b.type === 'image' && b.driveId).length;
+  return inBody + (String(body?.hero || '').trim() ? 1 : 0);
 }

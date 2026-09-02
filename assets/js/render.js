@@ -62,14 +62,17 @@ function mastheadHTML(body, period) {
     </div>`;
 }
 
-/** 머리말 — 첫 블록이 사진이면 그 사진 위에 얹는다(Hero). */
-function heroHTML(block, body) {
+/** 머리말 — 머리글 사진 위에 제목을 얹는다(Hero). */
+function heroHTML(src, size, body) {
+  const isPath = /[/.]/.test(src);
+  const photo = isPath
+    ? `<img class="letter__hero-photo" src="${esc(src)}" alt="">`
+    : `<a class="letter__hero-link" href="${esc(driveViewUrl(src))}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
+         <img class="letter__hero-photo" data-drive-id="${esc(src)}" alt="" referrerpolicy="no-referrer">
+       </a>`;
   return `
-    <header class="letter__hero ${sizeClass('letter__hero', block.size, HERO_SIZES)}">
-      <a class="letter__hero-link" href="${esc(driveViewUrl(block.driveId))}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
-        <img class="letter__hero-photo" data-drive-id="${esc(block.driveId)}"
-             alt="" referrerpolicy="no-referrer">
-      </a>
+    <header class="letter__hero ${sizeClass('letter__hero', size, HERO_SIZES)}">
+      ${photo}
       <div class="letter__photo-fallback" hidden>${SHARE_HELP}</div>
       <div class="letter__hero-veil" aria-hidden="true"></div>
       <div class="letter__hero-text">
@@ -145,9 +148,12 @@ export function letterHTML(body, meta = {}) {
   const period = body.period || periodLabel(meta.id);
   const all = body.blocks || [];
 
-  // Hero — 첫 블록이 사진이면 머리 이미지로 세우고, 본문에서는 뺀다.
-  const hero = all[0]?.type === 'image' && all[0].driveId ? all[0] : null;
-  const rest = hero ? all.slice(1) : all;
+  // 머리글 사진. 옛 편지는 본문 첫 사진을 머리글로 썼으므로 그것도 받아 준다.
+  const heroField = String(body.hero || '').trim();
+  const legacy = !heroField && all[0]?.type === 'image' && all[0].driveId ? all[0] : null;
+  const heroSrc = heroField || legacy?.driveId || '';
+  const heroSize = heroField ? body.heroSize : legacy?.size;
+  const rest = legacy ? all.slice(1) : all;
 
   // 연달아 놓인 사진 중 '한 줄에 몇 장'이 같은 것끼리 묶어 한 줄로 만든다.
   const parts = [];
@@ -185,9 +191,9 @@ export function letterHTML(body, meta = {}) {
   const blocks = parts.join('');
 
   return `
-    <article class="letter${hero ? ' letter--hero' : ''}">
+    <article class="letter${heroSrc ? ' letter--hero' : ''}">
       ${mastheadHTML(body, period)}
-      ${hero ? heroHTML(hero, body) : plainHeadHTML(body)}
+      ${heroSrc ? heroHTML(heroSrc, heroSize, body) : plainHeadHTML(body)}
       <div class="letter__sheet">
         ${body.greeting ? `<p class="letter__greeting">${esc(body.greeting)}</p>` : ''}
         <div class="letter__body">${blocks}</div>
