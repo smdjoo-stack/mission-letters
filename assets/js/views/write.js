@@ -237,7 +237,7 @@ function paint(root) {
       <div class="sticky-bar no-print">
         <span class="sticky-bar__status" id="save-status"></span>
         <button type="button" class="btn btn--ghost" id="preview-btn">미리보기</button>
-        <button type="button" class="btn btn--primary" id="deploy-btn">${state.isEdit ? '수정 배포' : '배포'}</button>
+        <button type="button" class="btn btn--primary" id="deploy-btn">${state.isEdit ? '수정본 파일 내려받기' : '발행 파일 내려받기'}</button>
       </div>
     </div>`;
 
@@ -786,7 +786,7 @@ async function deploy(root) {
 
   const confirmed = await dialog({
     title: state.isEdit ? '수정한 편지를 내려받습니다' : '편지 내용을 내려받습니다',
-    confirmLabel: '배포 파일 내려받기',
+    confirmLabel: '발행 파일 내려받기',
     content: `
       <ul class="summary">
         <li><span>편지</span><strong>${esc(state.body.title)}</strong></li>
@@ -821,7 +821,7 @@ async function deploy(root) {
   const status = $('#save-status', root);
   const restore = () => {
     button.disabled = false;
-    button.textContent = state.isEdit ? '수정 배포' : '배포';
+    button.textContent = state.isEdit ? '수정본 파일 내려받기' : '발행 파일 내려받기';
   };
   button.disabled = true;
   button.textContent = '내려받는 중…';
@@ -831,7 +831,7 @@ async function deploy(root) {
   try {
     downloadJSON(name, deployPayload());
     // 임시저장은 지우지 않는다 — 아직 발행 전이라 이 화면이 유일한 원본이다.
-    status.textContent = '배포 파일을 내려받았습니다.';
+    status.textContent = '발행 파일을 내려받았습니다.';
     restore();
     await showDeployed(name);
   } catch (err) {
@@ -846,7 +846,7 @@ async function showDeployed(fileName) {
   const link = shareLink(state.id);
   const command = `node scripts/publish-letter.mjs ~/Downloads/${fileName}`;
   await dialog({
-    title: '배포 파일을 내려받았습니다',
+    title: '발행 파일을 내려받았습니다',
     confirmLabel: '명령 복사하고 닫기',
     cancelLabel: '닫기',
     content: `

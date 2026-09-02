@@ -810,7 +810,8 @@ body.is-locked {
 /* ── A4 인쇄 — PRD §6.3 ───────────────────────────────────────── */
 @page {
   size: A4;
-  margin: 20mm;
+  /* 위아래 25mm, 좌우 25mm — 20mm 면 한 줄이 170mm 로 길어져 읽기 힘들다. */
+  margin: 25mm;
 }
 
 @media print {
@@ -836,17 +837,61 @@ body.is-locked {
   .masthead__org { font-size: 12pt; color: #1a2b45; }
   .masthead__period { font-size: 9pt; color: #555; }
 
-  /* Hero 는 인쇄에서 사진 + 검은 글씨의 보통 머리말로 되돌린다 */
-  .letter__hero { display: block; min-height: 0; background: none; border-radius: 0; overflow: visible;
-    margin-bottom: 8mm; padding-bottom: 5mm; border-bottom: 1pt solid #ccc; break-inside: avoid; }
-  .letter__hero-link { position: static; display: block; }
-  .letter__hero-photo { width: 100%; height: auto; max-height: 95mm; object-fit: cover; }
-  .letter__hero-veil { display: none; }
-  .letter__hero-text { position: static; padding: 4mm 0 0; }
-  .letter--hero .letter__hero .letter__title  { color: #1a2b45; }
-  .letter--hero .letter__hero .letter__period,
-  .letter--hero .letter__hero .letter__author { color: #555; }
-  .letter__hero.is-failed .letter__hero-photo { display: none; }
+  /* Hero — 인쇄에서도 화면처럼 사진 위에 제목을 얹는다.
+     배경(그라데이션)은 기본적으로 인쇄에서 빠지므로 print-color-adjust 로 강제한다.
+     그래도 빠지는 프린터가 있어 제목에는 그림자를 두어 사진 위에서 읽히게 한다. */
+  .letter__hero {
+    display: grid;
+    align-items: end;
+    height: 105mm;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 8mm;
+    background: #1a2b45;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .letter__hero-link { position: absolute; inset: 0; display: block; }
+  .letter__hero-photo { width: 100%; height: 100%; max-height: none; object-fit: cover; }
+  .letter__hero-veil {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+      rgba(26,43,69,.25) 0%, rgba(26,43,69,.50) 52%, rgba(26,43,69,.84) 100%);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .letter__hero-text { position: relative; padding: 8mm; }
+  .letter--hero .letter__hero .letter__title {
+    color: #fbf9f4;
+    font-size: 20pt;
+    margin-bottom: 2mm;
+    text-shadow: 0 1pt 3pt rgba(0,0,0,.6);
+  }
+  .letter--hero .letter__hero .letter__author {
+    color: #fbf9f4;
+    text-shadow: 0 1pt 3pt rgba(0,0,0,.6);
+  }
+
+  /* 사진을 못 불러오면 사진 없이 검은 글씨의 보통 머리말로 돌아간다 */
+  .letter__hero.is-failed {
+    display: block;
+    height: auto;
+    background: none;
+    padding-bottom: 5mm;
+    border-bottom: 1pt solid #ccc;
+  }
+  .letter__hero.is-failed .letter__hero-link,
+  .letter__hero.is-failed .letter__hero-veil { display: none; }
+  .letter__hero.is-failed .letter__hero-text { padding: 0; }
+  .letter__hero.is-failed .letter__title  { color: #1a2b45; text-shadow: none; }
+  .letter__hero.is-failed .letter__author { color: #555; text-shadow: none; }
 
   .letter__figure--wide { margin-inline: 0; }
   .letter__figure--small .letter__photo { max-height: 70mm; }
